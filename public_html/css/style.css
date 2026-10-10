@@ -121,3 +121,128 @@ p, h1 { margin: 0; }
 @media (max-width: 480px) {
   .roles li { grid-template-columns: 1fr; gap: 0.5rem; }
 }
+
+/* About note */
+.note {
+  font-style: italic;
+  font-size: clamp(1.125rem, 1.8vw, 1.375rem);
+  line-height: 1.5;
+  color: var(--text-soft);
+  max-width: 36rem;
+}
+
+/* Key figures */
+.figures { max-width: 56rem; margin: 0 auto; padding: 2rem 1.5rem 8rem; }
+.figures ul {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 3rem 2rem; text-align: center;
+}
+.figures li { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+.figure { font-size: clamp(3rem, 6vw, 4.5rem); line-height: 1; color: var(--text-strong); }
+.figures .meta { max-width: 14rem; line-height: 1.6; }
+
+/* Ascension Festival gallery */
+.festival {
+  max-width: 72rem; margin: 0 auto; padding: 4rem 1.5rem 10rem;
+  display: flex; flex-direction: column; gap: 3.5rem;
+}
+.festival-head { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; text-align: center; }
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 0.75rem;
+}
+.gallery figure {
+  margin: 0; overflow: hidden; background: #171513;
+  grid-column: span 4; aspect-ratio: 3 / 2;
+}
+/* Rows 1–2: wide lead + tall; rows 3–4: tall + wide; then three across */
+.gallery .g-lead, .gallery .g-wide { grid-column: span 9; grid-row: span 2; }
+.gallery .g-tall { grid-column: span 3; grid-row: span 2; aspect-ratio: auto; }
+.gallery img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+  filter: grayscale(0.85) brightness(0.8) contrast(1.05);
+  transform: scale(1.001);
+  transition: filter .8s ease, transform 1.2s cubic-bezier(.2,.7,.2,1);
+}
+.gallery figure:hover img {
+  filter: grayscale(0) brightness(1) contrast(1);
+  transform: scale(1.04);
+}
+@media (max-width: 760px) {
+  .gallery { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .gallery figure { grid-column: span 1; }
+  .gallery .g-lead, .gallery .g-wide { grid-column: span 2; grid-row: auto; aspect-ratio: 3 / 2; }
+  .gallery .g-tall { grid-column: span 1; grid-row: auto; aspect-ratio: 2 / 3; }
+  .gallery figure:last-child { grid-column: span 2; }
+}
+/* Touch screens have no hover: show photos in colour */
+@media (hover: none) {
+  .gallery img { filter: none; }
+}
+
+/* Animations */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero h1 { animation: rise 1.4s cubic-bezier(.2,.7,.2,1) both .1s; }
+.hero .subtitle { animation: rise 1.4s cubic-bezier(.2,.7,.2,1) both .45s; }
+
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 1s ease, transform 1s cubic-bezier(.2,.7,.2,1);
+}
+.js .reveal.is-visible { opacity: 1; transform: none; }
+
+/* Hover details */
+.projects li .project-title { transition: color .35s, transform .5s cubic-bezier(.2,.7,.2,1); }
+.projects li:hover .project-title { color: var(--accent); transform: translateX(0.5rem); }
+.projects li .meta { transition: color .35s; }
+.projects li:hover .meta { color: var(--text-soft); }
+
+.email, .links a { position: relative; }
+.email::after, .links a::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -0.15em; height: 1px;
+  background: currentColor; transform: scaleX(0); transform-origin: left;
+  transition: transform .5s cubic-bezier(.2,.7,.2,1);
+}
+.links a::after { bottom: 0.5rem; }
+.email:hover::after, .links a:hover::after,
+.email:focus-visible::after, .links a:focus-visible::after { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .js .reveal { opacity: 1; transform: none; }
+}
+
+/* Venture links */
+.site-link {
+  font-family: var(--sans); font-size: 0.8125rem;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+  position: relative; padding: 0.5rem 0;
+}
+.site-link::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0.3rem; height: 1px;
+  background: currentColor; transform: scaleX(0); transform-origin: left;
+  transition: transform .5s cubic-bezier(.2,.7,.2,1);
+}
+.site-link:hover::after, .site-link:focus-visible::after { transform: scaleX(1); }
+.company a {
+  color: inherit;
+  text-decoration: underline; text-decoration-color: var(--rule);
+  text-underline-offset: 0.2em; text-decoration-thickness: 1px;
+  transition: color .3s, text-decoration-color .3s;
+}
+.company a:hover, .company a:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
+
+/* Tim Clark highlight — three squares, kept compact: source images are small */
+.festival.duo { max-width: 56rem; padding-top: 0; }
+.gallery-duo { grid-template-columns: repeat(3, 1fr); }
+.gallery-duo figure { grid-column: span 1; aspect-ratio: 1 / 1; }
+@media (max-width: 760px) {
+  .gallery-duo { grid-template-columns: repeat(2, 1fr); }
+  .gallery-duo figure:first-child { grid-column: span 2; }
+  .gallery-duo figure:last-child { grid-column: span 1; }
+}
