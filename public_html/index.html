@@ -16,13 +16,20 @@
   <link rel="stylesheet" href="css/style.css">
   <script>document.documentElement.classList.replace('no-js','js')</script>
   <script src="js/main.js" defer></script>
+  <script src="js/particles.js" defer></script>
 </head>
 <body>
 <main>
 
   <section class="hero">
-    <h1>Egor Electionaire</h1>
-    <p class="subtitle">Entertainment Executive · Creative Director &amp; Executive Producer</p>
+    <div class="hero-stage">
+      <canvas class="hero-canvas" data-map="images/hero-particles.png" aria-hidden="true"></canvas>
+      <div class="hero-figure" aria-hidden="true"></div>
+      <div class="hero-text">
+        <h1>Egor Electionaire</h1>
+        <p class="subtitle">Entertainment Executive · Creative Director &amp; Executive Producer</p>
+      </div>
+    </div>
   </section>
 
   <section class="about">
@@ -79,6 +86,16 @@
       <figure class="reveal"><img src="images/timclark-untold-stage.jpg" width="512" height="512" alt="Tim Clark on stage at UNTOLD festival, arm raised to the crowd" loading="lazy" decoding="async"></figure>
       <figure class="reveal"><img src="images/timclark-untold-crowd.jpg" width="512" height="512" alt="Crowd under blue lasers in front of the UNTOLD stage" loading="lazy" decoding="async"></figure>
     </div>
+  </section>
+
+  <section class="endorsement">
+    <p class="label reveal">Recommendation</p>
+    <figure class="reveal">
+      <blockquote>
+        <p>At every turn over the last six months I have found Egor to be way smarter than the average young intern that we have had at the studios, resourceful in his ability to rise to challenges and, above all, exceptionally talented, musically.</p>
+      </blockquote>
+      <figcaption><span class="quote-name">Chris Craker</span><span class="meta">Former VP, Sony Music</span></figcaption>
+    </figure>
   </section>
 
   <section class="experience">
