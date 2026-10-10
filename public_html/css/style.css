@@ -246,3 +246,6 @@ p, h1 { margin: 0; }
   .gallery-duo figure:first-child { grid-column: span 2; }
   .gallery-duo figure:last-child { grid-column: span 1; }
 }
+
+/* Education sits close under Experience */
+.education { padding-top: 0; }
