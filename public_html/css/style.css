@@ -249,3 +249,11 @@ p, h1 { margin: 0; }
 
 /* Education sits close under Experience */
 .education { padding-top: 0; }
+
+/* First-person story in a highlight section */
+.story {
+  max-width: 42rem;
+  font-size: clamp(1.125rem, 1.8vw, 1.375rem);
+  line-height: 1.6;
+  color: var(--text);
+}
