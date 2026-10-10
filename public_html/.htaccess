@@ -1,0 +1,23 @@
+# Custom error page
+ErrorDocument 404 /404.html
+
+# No directory listings
+Options -Indexes
+
+# Force HTTPS — uncomment once SSL (AutoSSL / Let's Encrypt) is active in cPanel
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain image/svg+xml application/javascript
+</IfModule>
+
+# Browser caching
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType text/css "access plus 1 week"
+  ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
