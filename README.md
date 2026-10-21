@@ -11,6 +11,7 @@ public_html/
   favicon.svg
   robots.txt
   .htaccess      Apache settings (404 page, caching, optional HTTPS redirect)
+mecheng/         mecheng.electionaire.com: computational mechanics course apps
 .cpanel.yml      deploy script for cPanel Git Version Control
 tools/           particle-map builder and its source photo (not deployed)
 ```
@@ -34,6 +35,26 @@ python3 tools/build-particle-map.py tools/source/hero.jpg public_html/images/her
 Browsers block reading image pixels from `file://`, so preview the particles through a local server:
 `cd public_html && python3 -m http.server`, then open http://localhost:8000. Without WebGL the
 hero falls back to the plain centred name.
+
+## Subdomain: mecheng.electionaire.com
+
+`mecheng/` is a separate small site for computational mechanics course apps. Right now it holds the
+Stencil Consistency Lab, a single self-contained `index.html` with no build step.
+`.cpanel.yml` copies it to `~/mecheng.electionaire.com/` on every deploy.
+
+One-time setup in cPanel:
+1. **Domains** → **Create A New Domain**. Enter `mecheng.electionaire.com`.
+   Untick "Share document root" and set the document root to `mecheng.electionaire.com`
+   (so it becomes `/home/<user>/mecheng.electionaire.com`, outside `public_html`).
+2. Deploy as usual (Git Version Control → Update from Remote → Deploy HEAD Commit).
+3. **SSL/TLS Status** → run **AutoSSL** so the subdomain gets a certificate. Once `https://` works,
+   uncomment the "Force HTTPS" block in `mecheng/.htaccess`.
+
+If the domain's DNS is not managed by this cPanel host, also add a DNS record at your DNS provider:
+`mecheng` as a CNAME to `electionaire.com` (or an A record to the server's IP).
+
+To add another app later, put it in a subfolder, e.g. `mecheng/another-app/index.html`, which serves at
+`mecheng.electionaire.com/another-app/`.
 
 ## Deploying to cPanel
 

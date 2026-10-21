@@ -1,0 +1,20 @@
+# mecheng.electionaire.com: computational mechanics course apps
+
+# No directory listings
+Options -Indexes
+
+# Force HTTPS — uncomment once AutoSSL covers mecheng.electionaire.com
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain image/svg+xml application/javascript
+</IfModule>
+
+# Always fetch the latest HTML
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>

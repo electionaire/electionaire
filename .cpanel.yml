@@ -1,5 +1,10 @@
 ---
 deployment:
   tasks:
+    # Main site: electionaire.com
     - export DEPLOYPATH=$HOME/public_html/
     - /bin/cp -R public_html/. $DEPLOYPATH
+    # Course app: mecheng.electionaire.com (document root ~/mecheng.electionaire.com)
+    - export MECHENGPATH=$HOME/mecheng.electionaire.com/
+    - /bin/mkdir -p $MECHENGPATH
+    - /bin/cp -R mecheng/. $MECHENGPATH
