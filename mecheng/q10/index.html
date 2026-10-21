@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4MC10 exam trainer</title>
+<meta name="theme-color" content="#0E0D0C">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="../assets/lab.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/lab.js"></script>
+<style>
+.ladder { display: flex; flex-wrap: wrap; gap: .3rem; }
+.ladder button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.bcsvg { width: 100%; height: auto; display: block; max-height: 100%; }
+.bcsvg .edge { cursor: pointer; fill: none; stroke-linecap: round; }
+.bcsvg .edge:hover { filter: brightness(1.25); }
+.bcsvg text { font-family: var(--serif); font-size: 15px; fill: var(--soft); font-style: italic; }
+.bcsvg text.m { font-family: var(--mono); font-size: 10px; font-style: normal; fill: var(--muted); }
+.bclegend { display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .76rem; color: var(--muted); align-items: center; }
+.bclegend i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+#weqbox .katex { font-size: 1.3em; }
+#wSoFar .katex { font-size: .92em; }
+.res dt { white-space: nowrap; }
+.res { row-gap: .55rem; font-size: .9rem; }
+.res dd .katex { font-size: 1.15em; }
+.chk { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; font-size: .84rem; }
+.chk li { padding-left: 1.2rem; position: relative; line-height: 1.45; }
+.chk li::before { content: '✓'; position: absolute; left: 0; color: var(--live); }
+.v-one .parts { grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
+.hat { width: 100%; max-width: 22rem; height: auto; display: block; }
+@media (min-width: 1100px) and (min-height: 640px) {
+  .split.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .v-one .card { flex: 1 1 0; }
+  #bcPic { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top" id="top"></header>
+  <main class="stage">
+
+    <section class="view tri" data-view="bc">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method · boundary conditions</h2>
+          <ol class="steps">
+            <li><span><b>Write the PDE in divergence form,</b> \(\vec\nabla\cdot\boldsymbol X+\text{source}=0\). The quantity under the divergence is the flux \(\boldsymbol X\): \(\lambda\vec\nabla T\) (heat), \(x_2\,{}^4\boldsymbol C:\vec\nabla\vec u\) (rotor), \(E\,\frac{du}{dx}\) (bar).</span></li>
+            <li><span><b>Essential condition:</b> prescribes the unknown itself (\(T\), \(\vec u\), \(u\)). The weight function vanishes there.</span></li>
+            <li><span><b>Natural condition:</b> prescribes the normal flux \(\vec n\cdot\boldsymbol X\). It enters the weak form through the boundary integral.</span></li>
+            <li><span><b>Homogeneous natural condition:</b> \(\vec n\cdot\boldsymbol X=0\). Insulated, stress-free and free ends are all of this type.</span></li>
+            <li><span><b>Symmetry plane:</b> whatever crossed it one way would have to cross back by symmetry, so the normal flux is zero: the same condition as an insulated edge.</span></li>
+            <li><span><b>Use the outward normal</b> of each edge: \(-\vec e_1\) left, \(\vec e_1\) right, \(-\vec e_2\) bottom, \(\vec e_2\) top.</span></li>
+          </ol>
+        </section>
+      </div>
+      <div class="col c-lab">
+        <section class="card grow">
+          <div class="card-h"><h2>Lab · click an edge</h2><div id="bcProb"></div></div>
+          <div id="bcPic"></div>
+          <div class="bclegend"><span><i style="background:var(--ink)"></i>essential</span><span><i style="background:var(--live)"></i>natural</span><span><i style="background:var(--blue)"></i>symmetry (natural)</span></div>
+          <div id="bcOut" class="eqbox"></div>
+        </section>
+      </div>
+      <div class="col c-exam">
+        <section class="card grow">
+          <h2>Read the flux off the PDE</h2>
+          <table class="t">
+            <tr><th>Problem</th><th>Flux</th><th>Natural BC</th></tr>
+            <tr><td>Rotor<br><span class="note">Nov 2025</span></td><td>\(x_2\,{}^4\boldsymbol C:\vec\nabla\vec u\)</td><td>\(\vec n\cdot x_2\,{}^4\boldsymbol C:\vec\nabla\vec u=\vec t\)</td></tr>
+            <tr><td>Heat<br><span class="note">Feb 2025</span></td><td>\(\vec Q=-\lambda\vec\nabla T\)</td><td>\(\vec n\cdot\vec Q=q\), i.e. \(\vec n\cdot\lambda\vec\nabla T=-q\)</td></tr>
+            <tr><td>Bar<br><span class="note">Nov 2024</span></td><td>\(E\,\dfrac{du}{dx}\)</td><td>\(E\,\dfrac{du}{dx}=F\) at an end</td></tr>
+          </table>
+          <div class="key">The natural condition is exactly the expression that multiplies \(\phi\) in the boundary integral of the weak form. Derive the weak form and you can read it off.</div>
+          <div class="trap"><b>Trap.</b> A condition on \(u\) is essential even when it is zero. Only conditions on derivatives or fluxes are natural.</div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view tri" data-view="weak">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method · weak form in five moves</h2>
+          <ol class="steps" id="wsteps">
+            <li><span><b>Weighted residuals:</b> multiply the PDE by a weight function of the same type as the unknown (\(\phi\) or \(\vec\phi\), inner product for vectors), integrate over \(V\), write \(\forall\phi\).</span></li>
+            <li><span><b>Product rule:</b> \(\vec\nabla\cdot(\phi\,\vec q)=\phi\,\vec\nabla\cdot\vec q+\vec\nabla\phi\cdot\vec q\), or for vectors \(\vec\nabla\cdot(\boldsymbol\sigma\cdot\vec\phi)=\vec\phi\cdot\vec\nabla\cdot\boldsymbol\sigma+\vec\nabla\vec\phi^T:\boldsymbol\sigma\).</span></li>
+            <li><span><b>Substitute</b> it to replace the term with second derivatives on the unknown.</span></li>
+            <li><span><b>Divergence theorem:</b> \(\int_V\vec\nabla\cdot\vec a\,dV=\int_S\vec n\cdot\vec a\,dS\). In 1D: \(\int_0^L\frac{d}{dx}(\ldots)\,dx=\big[\ldots\big]_0^L\).</span></li>
+            <li><span><b>Reorder:</b> the term with \(u\) and \(\phi\) on the left; loads and the boundary integral on the right; repeat \(\forall\phi\).</span></li>
+          </ol>
+        </section>
+      </div>
+      <div class="col c-lab">
+        <section class="card grow">
+          <div class="card-h"><h2>Lab · derive it</h2><div id="wProb"></div></div>
+          <div class="ladder" id="wLadder"></div>
+          <div class="eq eqbox" id="weqbox"></div>
+          <p class="kid" id="wNote"></p>
+          <div class="row"><button id="wPrev">Back</button><button id="wNext" class="solid">Next step</button></div>
+          <h2 style="margin-top:.3rem">Derivation so far</h2>
+          <ol class="steps" id="wSoFar"></ol>
+        </section>
+      </div>
+      <div class="col c-exam">
+        <section class="card grow">
+          <h2>What earns the points</h2>
+          <ul class="chk">
+            <li>The weighted residuals formulation, with \(\forall\phi\) written out.</li>
+            <li>The product rule, stated explicitly in the form you use.</li>
+            <li>Name the step: the divergence theorem (Gauss), or integration by parts in 1D.</li>
+            <li>The final weak form with the boundary integral kept and \(\forall\phi\).</li>
+            <li>One derivative on the unknown, one on the weight function.</li>
+          </ul>
+          <h2 style="margin-top:.5rem">What happens to the boundary term</h2>
+          <p class="note" id="wBd"></p>
+        </section>
+      </div>
+    </section>
+
+    <section class="view tri" data-view="iso">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method · isoparametric element</h2>
+          <ol class="steps">
+            <li><span><b>Shape functions at the point:</b> evaluate \(\underset{\sim}{N}^e(\vec\xi_P)\). At a corner this is 1 for that node and 0 for the rest.</span></li>
+            <li><span><b>Position:</b> \(\vec x_P=\underset{\sim}{N}^{eT}(\vec\xi_P)\,\underset{\sim}{\vec x}^e=\sum_iN_i\vec x_i\).</span></li>
+            <li><span><b>Local gradients:</b> \(\vec\nabla_\xi N_i=\frac{\partial N_i}{\partial\xi_1}\vec e_1+\frac{\partial N_i}{\partial\xi_2}\vec e_2\), evaluated at \(\vec\xi_P\).</span></li>
+            <li><span><b>Jacobian:</b> \(\boldsymbol J=\vec\nabla_\xi\vec x=\sum_i(\vec\nabla_\xi N_i)\,\vec x_i\), so \(J_{ab}=\partial x_b/\partial\xi_a\). Its rows are the arrows \(\partial\vec x/\partial\xi_1\), \(\partial\vec x/\partial\xi_2\) in the drawing.</span></li>
+            <li><span><b>Interpolate:</b> \(\vec u^h_P=\sum_iN_i\vec u_i\).</span></li>
+            <li><span><b>Global gradient:</b> \(\vec\nabla N_i=\boldsymbol J^{-1}\cdot\vec\nabla_\xi N_i\), so \(\vec\nabla\vec u^h=\boldsymbol J^{-1}\cdot\sum_i(\vec\nabla_\xi N_i)\,\vec u_i\).</span></li>
+          </ol>
+          <p class="note">Drag the point on the left square or the nodes on the right. Units such as L, R, U, V are kept in every result.</p>
+        </section>
+      </div>
+      <div class="col c-lab">
+        <section class="card grow">
+          <div class="card-h"><h2>Lab · reference and physical element</h2><div class="row"><button data-iso="nov25">Nov 2025 P10</button><button data-iso="feb25">Feb 2025 P10</button><button data-iso="nov24">Nov 2024 P6</button></div></div>
+          <div class="split two">
+            <div class="col" style="gap:.3rem"><div class="fill"><canvas id="ref" class="drag" role="img" aria-label="Reference square with the point ξ"></canvas></div><p class="note" style="text-align:center">reference element, \(\vec\xi\in(-1,1)^2\)</p></div>
+            <div class="col" style="gap:.3rem"><div class="fill"><canvas id="phys" class="drag" role="img" aria-label="Physical element with mapped grid, point and Jacobian arrows"></canvas></div><p class="note" style="text-align:center">physical element, \(\vec x(\vec\xi)\)</p></div>
+          </div>
+          <div class="row"><label class="note"><input type="checkbox" id="showDef" checked> show nodal displacements (scaled)</label><span class="note" id="isoNote"></span></div>
+        </section>
+      </div>
+      <div class="col c-exam">
+        <section class="card grow"><h2>Results at P</h2><dl class="facts res" id="isoOut"></dl></section>
+      </div>
+    </section>
+
+    <section class="view v-one" data-view="exams">
+      <section class="card grow"><h2>Past exams · problem 10</h2><div id="exam"></div></section>
+    </section>
+  </main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const { M, fmt, frac, math } = Lab;
+  const views = Lab.header(10, [{ id: 'bc', label: '10a · Boundary conditions' }, { id: 'weak', label: '10b · Weak form' }, { id: 'iso', label: '10c–f · Element' }, { id: 'exams', label: 'Past exams' }]);
+  const C4 = M`{x_2\,{}^4\boldsymbol C:\vec\nabla\vec u}`;
+
+  /* ---------- boundary conditions ---------- */
+  const BC = {
+    rotor: { label: 'Rotor · Nov 2025', edges: [
+      { p: 'M70 160 L340 160', t: 'ess', name: 'Axis of rotation, \\(x_2=0\\)', eq: M`\vec u=\vec 0`, why: 'Prescribes the unknown itself: essential. The weight function vanishes here.' },
+      { p: 'M340 160 L340 40', t: 'nat', name: 'End face, \\(x_1=L\\)', eq: M`\vec n\cdot ${C4}=\vec 0,\quad\vec n=\vec e_1`, why: 'Stress free: zero normal flux (traction). Natural, so it lives in the boundary integral.' },
+      { p: 'M340 40 L70 40', t: 'nat', name: 'Outer surface, \\(x_2=R\\)', eq: M`\vec n\cdot ${C4}=\vec 0,\quad\vec n=\vec e_2`, why: 'Stress free outer surface of the rotor.' },
+      { p: 'M70 40 L70 160', t: 'nat', name: 'End face, \\(x_1=0\\)', eq: M`\vec n\cdot ${C4}=\vec 0,\quad\vec n=-\vec e_1`, why: 'Stress free. Note the outward normal points in −e₁ here.' },
+    ], deco: '<text x="196" y="108">V</text><text x="200" y="196">L</text><text x="48" y="104">R</text><text class="m" x="352" y="164">x₁</text><text class="m" x="64" y="30">x₂</text><line x1="70" y1="180" x2="340" y2="180" stroke="#2A2724"/>' },
+    plate: { label: 'Baseplate · Feb 2025', edges: [
+      { p: 'M70 160 L340 160', t: 'ess', name: 'Heat sink, \\(x_2=0\\)', eq: M`T=T_s`, why: 'Prescribes the temperature itself: essential.' },
+      { p: 'M70 40 L151 40', t: 'ess', name: 'Die, \\(x_2=H,\\ 0\\le x_1\\le l\\)', eq: M`T=T_d`, why: 'The die fixes the temperature: essential.' },
+      { p: 'M151 40 L340 40', t: 'nat', name: 'Top, \\(x_2=H,\\ l\\lt x_1\\le L\\)', eq: M`\vec n\cdot\lambda\vec\nabla T=0,\quad\vec n=\vec e_2`, why: 'Insulated: no heat passes, so the normal heat flux is zero.' },
+      { p: 'M340 40 L340 160', t: 'nat', name: 'Right edge, \\(x_1=L\\)', eq: M`\vec n\cdot\lambda\vec\nabla T=0,\quad\vec n=\vec e_1`, why: 'Insulated side of the plate.' },
+      { p: 'M70 160 L70 40', t: 'sym', name: 'Symmetry plane, \\(x_1=0\\)', eq: M`\vec n\cdot\lambda\vec\nabla T=0,\quad\vec n=-\vec e_1`, why: 'Heat crossing to the left half would be mirrored by the same heat crossing back. Both hold only if the normal flux is zero, so the condition is the same as on an insulated edge (Feb 2025 10b).' },
+    ], deco: '<text x="196" y="108">V</text><text x="104" y="30">T_d</text><text x="196" y="182">T_s</text><text x="200" y="204">L</text><text x="48" y="104">H</text><text class="m" x="146" y="30">l</text><text class="m" x="352" y="164">x₁</text><text class="m" x="64" y="30">x₂</text>' },
+    bar: { label: 'Bar · Nov 2024', edges: [
+      { p: 'M70 100 L72 100', t: 'ess', dot: [70, 100], name: 'End \\(x=0\\)', eq: M`u(0)=0`, why: 'A condition on u itself: essential.' },
+      { p: 'M338 100 L340 100', t: 'ess', dot: [340, 100], name: 'End \\(x=L\\)', eq: M`u(L)=U`, why: 'Also on u itself: essential. A natural condition here would prescribe the force E du/dx at x = L.' },
+    ], deco: '<line x1="70" y1="100" x2="340" y2="100" stroke="#C8C1B6" stroke-width="6"/>' + Array.from({ length: 14 }, (_, k) => `<path d="M${84 + k * 19} 104 l-5 10 l10 0 z" fill="none" stroke="#2A2724"/>`).join('') + '<text x="190" y="88">E, S</text><text class="m" x="66" y="130">0</text><text class="m" x="336" y="130">L</text><text class="m" x="150" y="150">elastic foundation</text>' },
+  };
+  const COL = { ess: '#C9B48A', nat: '#9CC59A', sym: '#8FB0D6' };
+  const TYPE = { ess: ['Essential', 'ink'], nat: ['Natural', 'live'], sym: ['Natural (symmetry)', 'blue'] };
+  let bcK = 'rotor', bcE = 0;
+  const setBc = Lab.seg(document.getElementById('bcProb'), Object.keys(BC).map(k => ({ v: k, label: BC[k].label })), bcK, v => { bcK = v; bcE = 0; renderBc(); });
+  function renderBc() {
+    setBc(bcK);
+    const P = BC[bcK];
+    const fillRect = bcK === 'bar' ? '' : '<rect x="70" y="40" width="270" height="120" fill="rgba(201,180,138,.06)"/>';
+    const edges = P.edges.map((e, i) => {
+      const w = i === bcE ? 9 : 5, dash = e.t === 'sym' ? ' stroke-dasharray="10 7"' : '';
+      if (e.dot) return `<circle class="edge" data-i="${i}" cx="${e.dot[0]}" cy="${e.dot[1]}" r="${i === bcE ? 11 : 8}" fill="${COL[e.t]}" stroke="${COL[e.t]}"/>`;
+      return `<path class="edge" data-i="${i}" d="${e.p}" stroke="${COL[e.t]}" stroke-width="${w}"${dash}/><path class="edge" data-i="${i}" d="${e.p}" stroke="transparent" stroke-width="22"/>`;
+    }).join('');
+    document.getElementById('bcPic').innerHTML = `<svg class="bcsvg" viewBox="20 10 380 200" role="img" aria-label="Problem domain with boundary types">${fillRect}${P.deco}${edges}</svg>`;
+    document.querySelectorAll('#bcPic .edge').forEach(el => el.addEventListener('click', () => { bcE = +el.dataset.i; renderBc(); }));
+    const e = P.edges[bcE], [tn, tc] = TYPE[e.t];
+    const out = document.getElementById('bcOut');
+    out.innerHTML = `<p><span class="chip ${tc}">${tn}</span> <b>${e.name}</b></p><div class="eq">\\[${e.eq}\\]</div><p class="note">${e.why}</p>`;
+    math(out);
+  }
+  renderBc();
+
+  /* ---------- weak form ---------- */
+  const W = {
+    rotor: { label: 'Rotor (vector)', bd: M`On the axis \(x_2=0\) the displacement is prescribed, so \(\vec\phi=\vec0\) there. Everywhere else the boundary is stress free: \(\vec n\cdot${C4}=\vec0\). The whole boundary integral vanishes.`, steps: [
+      [M`\vec\nabla\cdot\big(${C4}\big)+\rho\,\omega^2x_2^2\,\vec e_2=\vec 0\quad\text{in }V`, 'Strong form: a vector equation, so the weight function will be a vector.'],
+      [M`\int_V\vec\phi\cdot\vec\nabla\cdot\big(${C4}\big)\,dV+\int_V\vec\phi\cdot\rho\,\omega^2x_2^2\,\vec e_2\,dV=0\quad\forall\vec\phi(\vec x)`, 'Weighted residuals: take the inner product with a vector weight function, integrate over V, and require it for every weight function.'],
+      [M`\vec\nabla\cdot\big[(${C4})\cdot\vec\phi\big]=\vec\phi\cdot\vec\nabla\cdot\big(${C4}\big)+\vec\nabla\vec\phi^{T}:${C4}`, 'Product rule. Check the pairing in index notation: ∂ᵢ(σᵢⱼφⱼ) = φⱼ∂ᵢσᵢⱼ + ∂ᵢφⱼ σᵢⱼ.'],
+      [M`\int_V\vec\nabla\cdot\big[(${C4})\cdot\vec\phi\big]dV-\int_V\vec\nabla\vec\phi^{T}:${C4}\,dV+\int_V\vec\phi\cdot\rho\,\omega^2x_2^2\,\vec e_2\,dV=0`, 'Substitute the product rule into the first integral.'],
+      [M`\int_V\vec\nabla\cdot\big[(${C4})\cdot\vec\phi\big]dV=\int_S\vec\phi\cdot\big(\vec n\cdot${C4}\big)\,dS`, 'Divergence theorem (Gauss) on the first integral. This is where the normal vector enters.'],
+      [M`\int_V\vec\nabla\vec\phi^{T}:${C4}\,dV=\int_V\vec\phi\cdot\rho\,\omega^2x_2^2\,\vec e_2\,dV+\int_S\vec\phi\cdot\big(\vec n\cdot${C4}\big)\,dS\quad\forall\vec\phi`, 'Weak form. The boundary integrand n·x₂⁴C:∇u is exactly the natural boundary condition of 10a.'],
+    ] },
+    heat: { label: 'Heat (scalar)', bd: M`At the die and the heat sink the temperature is prescribed, so \(\phi=0\) there. The insulated edges and the symmetry plane have \(\vec n\cdot\lambda\vec\nabla T=0\). The boundary integral vanishes once the essential conditions are imposed.`, steps: [
+      [M`\lambda\,\vec\nabla\cdot\vec\nabla T=0\quad\text{in }V`, 'Strong form of stationary heat conduction.'],
+      [M`\int_V\phi\,\lambda\,\vec\nabla\cdot\vec\nabla T\,dV=0\quad\forall\phi(\vec x)`, 'Weighted residuals: scalar problem, scalar weight φ.'],
+      [M`\vec\nabla\cdot\big(\phi\,\lambda\vec\nabla T\big)=\phi\,\lambda\,\vec\nabla\cdot\vec\nabla T+\vec\nabla\phi\cdot\lambda\vec\nabla T`, 'Product rule, used as φλ∇·∇T = ∇·(φλ∇T) − ∇φ·λ∇T.'],
+      [M`\int_V\vec\nabla\cdot\big(\phi\,\lambda\vec\nabla T\big)dV-\int_V\vec\nabla\phi\cdot\lambda\vec\nabla T\,dV=0`, 'Substitute.'],
+      [M`\int_V\vec\nabla\cdot\big(\phi\,\lambda\vec\nabla T\big)dV=\int_S\phi\,\vec n\cdot\lambda\vec\nabla T\,dS`, 'Divergence theorem on the first term.'],
+      [M`\int_V\vec\nabla\phi\cdot\lambda\vec\nabla T\,dV=\int_S\phi\,\vec n\cdot\lambda\vec\nabla T\,dS=-\int_S\phi\,\vec n\cdot\vec Q\,dS\quad\forall\phi`, 'Weak form, also written with the heat flux Q = −λ∇T.'],
+    ] },
+    bar: { label: 'Bar (1D)', bd: M`Both ends are essential (\(u(0)=0,\ u(L)=U\)), so \(\phi(0)=\phi(L)=0\) and the bracket \(\big[\phi E\,u'\big]_0^L\) drops out of the discrete system.`, steps: [
+      [M`E\,\frac{d^2u}{dx^2}-S\,u=0\quad\text{on }(0,L)`, 'Strong form: bar on an elastic foundation.'],
+      [M`\int_0^L\phi\,E\frac{d^2u}{dx^2}\,dx-\int_0^L\phi\,S\,u\,dx=0\quad\forall\phi(x)`, 'Weighted residuals.'],
+      [M`\frac{d}{dx}\Big(\phi\,E\frac{du}{dx}\Big)=\frac{d\phi}{dx}E\frac{du}{dx}+\phi\,E\frac{d^2u}{dx^2}`, 'Product rule.'],
+      [M`\int_0^L\frac{d}{dx}\Big(\phi E\frac{du}{dx}\Big)dx-\int_0^L\frac{d\phi}{dx}E\frac{du}{dx}\,dx-\int_0^L\phi\,S\,u\,dx=0`, 'Substitute.'],
+      [M`\int_0^L\frac{d}{dx}\Big(\phi E\frac{du}{dx}\Big)dx=\Big[\phi\,E\frac{du}{dx}\Big]_0^L`, 'Fundamental theorem of calculus: the 1D divergence theorem.'],
+      [M`\int_0^L\Big(\frac{d\phi}{dx}E\frac{du}{dx}+\phi\,S\,u\Big)dx=\Big[\phi\,E\frac{du}{dx}\Big]_0^L\quad\forall\phi`, 'Weak form.'],
+    ] },
+  };
+  const WN = ['Strong form', 'Weighted residuals', 'Product rule', 'Substitute', 'Divergence theorem', 'Weak form'];
+  let wK = 'rotor', wS = 0;
+  const setW = Lab.seg(document.getElementById('wProb'), Object.keys(W).map(k => ({ v: k, label: W[k].label })), wK, v => { wK = v; renderW(); });
+  function renderW() {
+    setW(wK);
+    document.getElementById('wLadder').innerHTML = WN.map((n, i) => `<button type="button" data-i="${i}" aria-pressed="${i === wS}">${i} · ${n}</button>`).join('');
+    document.querySelectorAll('#wLadder button').forEach(b => b.addEventListener('click', () => { wS = +b.dataset.i; renderW(); }));
+    const [eq, note] = W[wK].steps[wS];
+    const box = document.getElementById('weqbox'); box.innerHTML = `\\[${eq}\\]`; math(box);
+    document.getElementById('wNote').textContent = note;
+    const sf = document.getElementById('wSoFar');
+    sf.innerHTML = W[wK].steps.slice(0, wS).map(([e2], i) => `<li style="opacity:.75"><span class="note">${WN[i]}</span><div class="eq">\\(${e2}\\)</div></li>`).join('') || '<li><span class="note">Start with the strong form, then press Next step.</span></li>';
+    math(sf);
+    const bd = document.getElementById('wBd'); bd.innerHTML = W[wK].bd; math(bd);
+    document.querySelectorAll('#wsteps > li').forEach((li, i) => li.classList.toggle('on', i === wS - 1));
+    document.getElementById('wPrev').disabled = wS === 0; document.getElementById('wNext').disabled = wS === 5;
+  }
+  document.getElementById('wPrev').addEventListener('click', () => { wS = Math.max(0, wS - 1); renderW(); });
+  document.getElementById('wNext').addEventListener('click', () => { wS = Math.min(5, wS + 1); renderW(); });
+  renderW();
+
+  /* ---------- isoparametric element ---------- */
+  const ISO = {
+    nov25: { x: [[.5, .6], [.6, .6], [.6, .8], [.5, .8]], u: [[0, .6], [-.1, .6], [-.2, .7], [0, .7]], ux: ['L', 'R'], uu: ['U', 'V'], xi: [-1, -1] },
+    feb25: { x: [[.125, 0], [.25, 0], [.25, 1 / 3], [.125, 1 / 3]], u: null, ux: ['L', 'H'], uu: ['', ''], xi: [.5, 0] },
+    nov24: { x: [[8, 8], [4, 8], [2, 4], [6, 4]], u: null, ux: ['', ''], uu: ['', ''], xi: [0, 0] },
+  };
+  let E = null, view = null;
+  const Nf = ([a, b]) => [(1 - a) * (1 - b) / 4, (1 + a) * (1 - b) / 4, (1 + a) * (1 + b) / 4, (1 - a) * (1 + b) / 4];
+  const dN = ([a, b]) => [[-(1 - b) / 4, -(1 - a) / 4], [(1 - b) / 4, -(1 + a) / 4], [(1 + b) / 4, (1 + a) / 4], [-(1 + b) / 4, (1 - a) / 4]];
+  const map = (xi, X) => { const N = Nf(xi); return [0, 1].map(c => N.reduce((s, n, i) => s + n * X[i][c], 0)); };
+  function loadIso(k) { const d = ISO[k]; E = JSON.parse(JSON.stringify(d)); E.key = k; fitView(); renderIso(); }
+  document.querySelectorAll('[data-iso]').forEach(b => b.addEventListener('click', () => loadIso(b.dataset.iso)));
+  const refC = document.getElementById('ref'), phys = document.getElementById('phys');
+  function fitView() {
+    const xs = E.x.map(p => p[0]), ys = E.x.map(p => p[1]);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys), m = Math.max(w, h) * .25;
+    view = { cx, cy, sx: w + 2 * m, sy: h + 2 * m, span: Math.max(w, h) * 1.45 || 1 };
+  }
+  function physT() {
+    const W2 = phys.clientWidth, H2 = phys.clientHeight, s = Math.min(W2 / view.sx, H2 / view.sy);
+    return { X: x => W2 / 2 + (x - view.cx) * s, Y: y => H2 / 2 - (y - view.cy) * s, IX: px => view.cx + (px - W2 / 2) / s, IY: py => view.cy - (py - H2 / 2) / s, s };
+  }
+  function refT() {
+    const W2 = refC.clientWidth, H2 = refC.clientHeight, side = Math.min(W2, H2) - 36, x0 = (W2 - side) / 2, y0 = (H2 - side) / 2;
+    return { X: a => x0 + (a + 1) / 2 * side, Y: b => y0 + (1 - b) / 2 * side, IA: px => (px - x0) / side * 2 - 1, IB: py => 1 - (py - y0) / side * 2, side };
+  }
+  function arrow(g, x1, y1, x2, y2, col) {
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    const a = Math.atan2(y2 - y1, x2 - x1); g.beginPath(); g.moveTo(x2, y2); g.lineTo(x2 - 9 * Math.cos(a - .4), y2 - 9 * Math.sin(a - .4)); g.lineTo(x2 - 9 * Math.cos(a + .4), y2 - 9 * Math.sin(a + .4)); g.closePath(); g.fill();
+  }
+  function drawIso() {
+    if (!E) return;
+    const ink = Lab.tok('--ink'), blue = Lab.tok('--blue'), soft = Lab.tok('--soft'), muted = Lab.tok('--muted'), line = Lab.tok('--line');
+    { // reference
+      const { g } = Lab.canvas(refC), T = refT();
+      g.strokeStyle = line; g.lineWidth = 1;
+      [-.5, 0, .5].forEach(v => { g.beginPath(); g.moveTo(T.X(v), T.Y(-1)); g.lineTo(T.X(v), T.Y(1)); g.moveTo(T.X(-1), T.Y(v)); g.lineTo(T.X(1), T.Y(v)); g.stroke(); });
+      g.strokeStyle = soft; g.lineWidth = 1.5; g.strokeRect(T.X(-1), T.Y(1), T.side, T.side);
+      g.font = '10px ' + Lab.tok('--mono'); g.fillStyle = muted; g.textAlign = 'center';
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([a, b], i) => { g.beginPath(); g.arc(T.X(a), T.Y(b), 4, 0, 7); g.fillStyle = soft; g.fill(); g.fillStyle = muted; g.fillText(i + 1, T.X(a) + (a > 0 ? 10 : -10), T.Y(b) + (b > 0 ? -6 : 14)); });
+      const px = T.X(E.xi[0]), py = T.Y(E.xi[1]), len = T.side * .22;
+      arrow(g, px, py, px + len, py, ink); arrow(g, px, py, px, py - len, blue);
+      g.beginPath(); g.arc(px, py, 6, 0, 7); g.fillStyle = Lab.tok('--strong'); g.fill();
+      g.fillStyle = ink; g.textAlign = 'left'; g.fillText('e₁', px + len + 3, py + 4); g.fillStyle = blue; g.fillText('e₂', px + 4, py - len - 2);
+    }
+    { // physical
+      const { g } = Lab.canvas(phys), T = physT();
+      g.strokeStyle = line; g.lineWidth = 1;
+      [-.5, 0, .5].forEach(v => {
+        g.beginPath(); for (let k = 0; k <= 20; k++) { const p = map([v, -1 + k / 10], E.x); k ? g.lineTo(T.X(p[0]), T.Y(p[1])) : g.moveTo(T.X(p[0]), T.Y(p[1])); } g.stroke();
+        g.beginPath(); for (let k = 0; k <= 20; k++) { const p = map([-1 + k / 10, v], E.x); k ? g.lineTo(T.X(p[0]), T.Y(p[1])) : g.moveTo(T.X(p[0]), T.Y(p[1])); } g.stroke();
+      });
+      g.fillStyle = 'rgba(201,180,138,.07)'; g.strokeStyle = soft; g.lineWidth = 1.5; g.beginPath(); E.x.forEach((p, i) => i ? g.lineTo(T.X(p[0]), T.Y(p[1])) : g.moveTo(T.X(p[0]), T.Y(p[1]))); g.closePath(); g.fill(); g.stroke();
+      if (E.u && document.getElementById('showDef').checked) {
+        const um = Math.max(...E.u.map(u => Math.hypot(u[0], u[1]))) || 1, sc = view.span * .12 / um;
+        g.strokeStyle = Lab.tok('--live'); g.setLineDash([4, 4]); g.beginPath(); E.x.forEach((p, i) => { const q = [T.X(p[0] + sc * E.u[i][0]), T.Y(p[1] + sc * E.u[i][1])]; i ? g.lineTo(...q) : g.moveTo(...q); }); g.closePath(); g.stroke(); g.setLineDash([]);
+        E.x.forEach((p, i) => { if (Math.hypot(...E.u[i]) > 1e-12) arrow(g, T.X(p[0]), T.Y(p[1]), T.X(p[0] + sc * E.u[i][0]), T.Y(p[1] + sc * E.u[i][1]), Lab.tok('--live')); });
+      }
+      g.font = '10px ' + Lab.tok('--mono');
+      E.x.forEach((p, i) => { g.beginPath(); g.arc(T.X(p[0]), T.Y(p[1]), 6, 0, 7); g.fillStyle = Lab.tok('--paper'); g.fill(); g.strokeStyle = soft; g.lineWidth = 1.5; g.stroke(); g.fillStyle = muted; g.textAlign = 'center'; g.fillText(i + 1, T.X(p[0]), T.Y(p[1]) - 10); });
+      const P = map(E.xi, E.x), D = dN(E.xi);
+      const J = [0, 1].map(a => [0, 1].map(b => D.reduce((s, d, i) => s + d[a] * E.x[i][b], 0)));
+      const px = T.X(P[0]), py = T.Y(P[1]);
+      arrow(g, px, py, T.X(P[0] + J[0][0] * .5), T.Y(P[1] + J[0][1] * .5), ink);
+      arrow(g, px, py, T.X(P[0] + J[1][0] * .5), T.Y(P[1] + J[1][1] * .5), blue);
+      g.beginPath(); g.arc(px, py, 6, 0, 7); g.fillStyle = Lab.tok('--strong'); g.fill();
+      g.textAlign = 'left'; g.fillStyle = Lab.tok('--strong'); g.fillText('P', px + 8, py + 14);
+      g.fillStyle = ink; g.fillText('∂x/∂ξ₁ (×½)', 6, 14); g.fillStyle = blue; g.fillText('∂x/∂ξ₂ (×½)', 6, 28);
+    }
+  }
+  // c with numerator unit nu and denominator unit du, as TeX
+  function q(c, nu, du) {
+    const f = frac(Math.abs(c), 400);
+    let body;
+    if (!f.ok) body = `${fmt(Math.abs(c), 3)}${nu ? '\\,' + nu : ''}${du ? '/' + du : ''}`;
+    else {
+      const p = Math.abs(f.num), d = f.den, top = `${p === 1 && nu ? '' : p}${nu || ''}`;
+      body = d === 1 && !du ? top : `\\tfrac{${top}}{${d === 1 ? '' : d}${du || ''}}`;
+    }
+    return { neg: c < 0, body };
+  }
+  function sum(terms) {
+    let out = '';
+    terms.forEach(([c, nu, du, b]) => { if (Math.abs(c) < 1e-10) return; const t = q(c, nu, du); const body = t.body === '1' && b ? '' : t.body; out += (out ? (t.neg ? ' - ' : ' + ') : (t.neg ? '-' : '')) + body + (b ? (body ? '\\,' : '') + b : ''); });
+    return out || '0';
+  }
+  const e = ['\\vec e_1', '\\vec e_2'], ee = (a, b) => `${e[a]}${e[b]}`;
+  function renderIso() {
+    if (!E) return;
+    const xi = E.xi, N = Nf(xi), D = dN(xi), ux = E.ux, uu = E.uu;
+    const P = map(xi, E.x);
+    const J = [0, 1].map(a => [0, 1].map(b => D.reduce((s, d, i) => s + d[a] * E.x[i][b], 0)));
+    const det = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+    const Ji = [[J[1][1] / det, -J[0][1] / det], [-J[1][0] / det, J[0][0] / det]];
+    const fx = v => frac(v, 400).tex;
+    let html = `
+      <dt>\\(\\vec\\xi_P\\)</dt><dd>\\(${sum([[xi[0], '', '', e[0]], [xi[1], '', '', e[1]]])}\\)</dd>
+      <dt>\\(\\underset{\\sim}{N}^e(\\vec\\xi_P)\\)</dt><dd>\\([\\,${N.map(fx).join(',\\ ')}\\,]^T\\)</dd>
+      <dt>\\(\\vec x_P\\)</dt><dd>\\(${sum([[P[0], ux[0], '', e[0]], [P[1], ux[1], '', e[1]]])}\\)</dd>
+      <dt>\\(\\vec\\nabla_\\xi\\underset{\\sim}{N}\\)</dt><dd>\\([\\,${D.map(d => sum([[d[0], '', '', e[0]], [d[1], '', '', e[1]]])).join(',\\ ')}\\,]^T\\)</dd>
+      <dt>\\(\\boldsymbol J_P\\)</dt><dd>\\(${sum([[J[0][0], ux[0], '', ee(0, 0)], [J[0][1], ux[1], '', ee(0, 1)], [J[1][0], ux[0], '', ee(1, 0)], [J[1][1], ux[1], '', ee(1, 1)]])}\\)</dd>
+      <dt>\\(\\det\\boldsymbol J_P\\)</dt><dd>\\(${sum([[det, ux[0] + ux[1], '']])}\\)${det <= 0 ? ' <span class="bad">element folded</span>' : ''}</dd>
+      <dt>\\(\\boldsymbol J_P^{-1}\\)</dt><dd>\\(${sum([[Ji[0][0], '', ux[0], ee(0, 0)], [Ji[0][1], '', ux[0], ee(0, 1)], [Ji[1][0], '', ux[1], ee(1, 0)], [Ji[1][1], '', ux[1], ee(1, 1)]])}\\)</dd>`;
+    if (E.u) {
+      const U = [0, 1].map(c => N.reduce((s, n, i) => s + n * E.u[i][c], 0));
+      const G = [0, 1].map(a => [0, 1].map(b => D.reduce((s, d, i) => s + d[a] * E.u[i][b], 0)));
+      const Gx = [0, 1].map(a => [0, 1].map(b => Ji[a][0] * G[0][b] + Ji[a][1] * G[1][b]));
+      html += `
+      <dt>\\(\\vec u^h_P\\)</dt><dd>\\(${sum([[U[0], uu[0], '', e[0]], [U[1], uu[1], '', e[1]]])}\\)</dd>
+      <dt>\\(\\vec\\nabla_\\xi\\vec u^h\\)</dt><dd>\\(${sum([[G[0][0], uu[0], '', ee(0, 0)], [G[0][1], uu[1], '', ee(0, 1)], [G[1][0], uu[0], '', ee(1, 0)], [G[1][1], uu[1], '', ee(1, 1)]])}\\)</dd>
+      <dt>\\(\\vec\\nabla\\vec u^h_P\\)</dt><dd>\\(${sum([[Gx[0][0], uu[0], ux[0], ee(0, 0)], [Gx[0][1], uu[1], ux[0], ee(0, 1)], [Gx[1][0], uu[0], ux[1], ee(1, 0)], [Gx[1][1], uu[1], ux[1], ee(1, 1)]])}\\)</dd>`;
+    } else html += '<dt>\\(\\vec u^h_P\\)</dt><dd class="note">no nodal values in this problem</dd>';
+    const out = document.getElementById('isoOut'); out.innerHTML = html; math(out);
+    document.getElementById('isoNote').textContent = { nov25: 'Nov 2025: P at ξ = (−1, −1), node 1.', feb25: 'Feb 2025: element 2, P at ξ = (½, 0).', nov24: 'Nov 2024 P6: J at the centre.' }[E.key] || '';
+    drawIso();
+  }
+  document.getElementById('showDef').addEventListener('change', drawIso);
+  Lab.drag(refC, {
+    hit: (x, y) => { const T = refT(); return Math.hypot(T.X(E.xi[0]) - x, T.Y(E.xi[1]) - y) < 16 ? 'p' : (x > T.X(-1) - 8 && x < T.X(1) + 8 && y > T.Y(1) - 8 && y < T.Y(-1) + 8 ? 'p' : null); },
+    move: (id, x, y) => { const T = refT(), sn = v => Math.max(-1, Math.min(1, Math.round(v * 20) / 20)); E.xi = [sn(T.IA(x)), sn(T.IB(y))]; E.key = ''; renderIso(); },
+  });
+  Lab.drag(phys, {
+    hit: (x, y) => { const T = physT(); let best = null, bd = 14; E.x.forEach((p, i) => { const d = Math.hypot(T.X(p[0]) - x, T.Y(p[1]) - y); if (d < bd) { bd = d; best = i; } }); return best; },
+    move: (id, x, y) => { const T = physT(), st = view.span / 80, sn = v => Math.round(v / st) * st; E.x[id] = [sn(T.IX(x)), sn(T.IY(y))]; E.key = ''; renderIso(); },
+  });
+  Lab.watch(phys.parentElement, drawIso);
+  const iniIso = (location.hash.split(':')[1]) || 'nov25';
+  loadIso(ISO[iniIso] ? iniIso : 'nov25');
+  views.on(id => { if (id === 'iso') requestAnimationFrame(drawIso); });
+
+  /* ---------- past exams ---------- */
+  const goW = k => { views.show('weak', true); wK = k; wS = 1; renderW(); };
+  const goBc = (k, i) => { views.show('bc', true); bcK = k; bcE = i; renderBc(); };
+  const goIso = k => { views.show('iso', true); loadIso(k); };
+  const wfSteps = k => W[k].steps.slice(1).map(([eq, note]) => `${note} \\(${eq}\\)`);
+  const hat = `<svg class="hat" viewBox="0 0 320 120" role="img" aria-label="Hat-shaped shape function N2 along the bottom edge"><line x1="20" y1="95" x2="310" y2="95" stroke="#2A2724"/><line x1="20" y1="20" x2="310" y2="20" stroke="#2A2724" stroke-dasharray="4 4"/><polyline points="20,95 56,20 92,95 310,95" fill="none" stroke="#C9B48A" stroke-width="2.5"/>${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(k => `<circle cx="${20 + k * 36.25}" cy="95" r="3" fill="#C8C1B6"/>`).join('')}<text x="20" y="112" class="m">0</text><text x="48" y="112" class="m">L/8</text><text x="82" y="112" class="m">2L/8</text><text x="300" y="112" class="m">L</text><text x="4" y="24" class="m">1</text><text x="4" y="99" class="m">0</text></svg>`;
+  Lab.exam(document.getElementById('exam'), [
+    {
+      type: 'open', label: 'Nov 2025 · rotor',
+      intro: M`Axisymmetric rotor on \(V=(0,L)\times(0,R)\): \(\vec\nabla\cdot(${C4})+\rho\omega^2x_2^2\vec e_2=\vec0\), \(\vec u=\vec0\) on the axis \(x_2=0\), stress free elsewhere. Bilinear element with \(\underset{\sim}{\vec x}^e=\tfrac1{10}L(5,6,6,5)\vec e_1+\tfrac15R(3,3,4,4)\vec e_2\), \(\underset{\sim}{\vec u}^e=-\tfrac1{10}U(0,1,2,0)\vec e_1+\tfrac1{10}V(6,6,7,7)\vec e_2\), \(\vec\xi_P=-\vec e_1-\vec e_2\).`,
+      parts: [
+        { id: '10a', pts: 4, q: M`Specify the natural boundary condition in terms of \(\vec u\), its gradient and other relevant quantities.`, sol: [M`The flux under the divergence is \(${C4}\). A natural condition prescribes its normal projection.`, M`Stress free means homogeneous: \(\vec n(\vec x)\cdot${C4}=\vec0\).`], load: () => goBc('rotor', 2) },
+        { id: '10b', pts: 10, q: 'Derive the weak formulation. Give the weighted residuals formulation and the product rule used.', sol: wfSteps('rotor'), load: () => goW('rotor') },
+        { id: '10c', pts: 4, q: M`Compute \(\vec x_P\) with the isoparametric map.`, sol: [M`\(\vec x(\vec\xi)=\underset{\sim}{N}^{eT}(\vec\xi)\,\underset{\sim}{\vec x}^e\). At \(\vec\xi_P=(-1,-1)\): \(\underset{\sim}{N}^e=[1,0,0,0]^T\).`, M`\(\vec x_P=\tfrac12L\,\vec e_1+\tfrac35R\,\vec e_2\) (node 1).`], load: () => goIso('nov25') },
+        { id: '10d', pts: 6, q: M`Compute the Jacobian \(\boldsymbol J_P\).`, sol: [M`\(\vec\nabla_\xi\underset{\sim}{N}^e\) at P: \([-\tfrac12(\vec e_1+\vec e_2),\ \tfrac12\vec e_1,\ \vec0,\ \tfrac12\vec e_2]^T\).`, M`\(\boldsymbol J_P=\vec\nabla_\xi\underset{\sim}{N}^{eT}\underset{\sim}{\vec x}^e=\tfrac1{20}L\,\vec e_1\vec e_1+\tfrac1{10}R\,\vec e_2\vec e_2\).`], load: () => goIso('nov25') },
+        { id: '10e', pts: 4, q: M`Compute \(\vec u^h_P\).`, sol: [M`\(\vec u^h_P=\underset{\sim}{N}^{eT}(\vec\xi_P)\,\underset{\sim}{\vec u}^e=\vec u_1=\tfrac35V\,\vec e_2\).`], load: () => goIso('nov25') },
+        { id: '10f', pts: 10, q: M`Compute the displacement gradient \(\vec\nabla\vec u^h_P\).`, sol: [M`\(\vec\nabla\underset{\sim}{N}^e=\boldsymbol J^{-1}\cdot\vec\nabla_\xi\underset{\sim}{N}^e\), with \(\boldsymbol J_P^{-1}=\tfrac{20}{L}\vec e_1\vec e_1+\tfrac{10}{R}\vec e_2\vec e_2\).`, M`\(\vec\nabla_\xi\vec u^h=\sum_i(\vec\nabla_\xi N_i)\vec u_i=-\tfrac{U}{20}\vec e_1\vec e_1+\tfrac{V}{20}\vec e_2\vec e_2\).`, M`\(\vec\nabla\vec u^h_P=-\tfrac UL\,\vec e_1\vec e_1+\tfrac{V}{2R}\,\vec e_2\vec e_2\).`], load: () => goIso('nov25') },
+      ],
+    },
+    {
+      type: 'open', label: 'Feb 2025 · baseplate',
+      intro: M`Stationary heat conduction in the half baseplate \(V=(0,L)\times(0,H)\): \(-\vec\nabla\cdot\vec Q=0\), \(\vec Q=-\lambda\vec\nabla T\). \(T=T_d\) under the die, \(T=T_s\) at the bottom, insulated elsewhere, symmetry plane at \(x_1=0\). Mesh of 8 × 3 bilinear elements.`,
+      parts: [
+        { id: '10a', pts: 4, q: 'Formulate the natural boundary condition on the insulated parts of the boundary.', sol: [M`No heat crosses the boundary, so the normal heat flux vanishes: \(\vec n\cdot\vec Q=0\), i.e. \(\vec n\cdot\lambda\vec\nabla T=0\).`], load: () => goBc('plate', 2) },
+        { id: '10b', pts: 4, q: M`Explain why the same condition applies on the symmetry plane \(x_1=0\).`, sol: [M`Heat flowing from the right half into the left would, by mirror symmetry, be matched by the same flow from left to right.`, M`Both can only hold if the normal flow is zero: \(\vec n\cdot\vec Q=0\). The tangential component may be nonzero; its mirror image is identical.`], load: () => goBc('plate', 4) },
+        { id: '10c', pts: 12, q: M`Derive the weak form of \(\lambda\nabla^2T=0\). Give the weighted residuals formulation and the product rule.`, sol: wfSteps('heat'), load: () => goW('heat') },
+        { id: '10d', pts: 6, q: M`Sketch the shape function \(N_2\) along the bottom, \(x_2=0\).`, sol: [M`\(N_2\) equals 1 at node 2 \((x_1=L/8)\), 0 at every other node, and is linear along each element edge:` + hat, M`So it is a hat: rising on \((0,L/8)\), falling on \((L/8,2L/8)\), zero beyond.`] },
+        { id: '10e', pts: 6, q: M`Element 2: \(\underset{\sim}{\vec x}^2=\tfrac18L(1,2,2,1)\vec e_1+\tfrac13H(0,0,1,1)\vec e_2\). Compute \(\vec x_P\) for \(\vec\xi_P=\tfrac12\vec e_1\).`, sol: [M`\(\vec x(\vec\xi)=\tfrac1{16}(3+\xi_1)L\,\vec e_1+\tfrac16(1+\xi_2)H\,\vec e_2\).`, M`\(\vec x_P=\tfrac{7}{32}L\,\vec e_1+\tfrac16H\,\vec e_2\).`], load: () => goIso('feb25') },
+        { id: '10f', pts: 6, q: M`Compute the Jacobian \(\boldsymbol J\) in P.`, sol: [M`\(\boldsymbol J=\vec\nabla_\xi\vec x=\tfrac1{16}L\,\vec e_1\vec e_1+\tfrac16H\,\vec e_2\vec e_2\), constant over this rectangular element.`], load: () => goIso('feb25') },
+      ],
+    },
+    {
+      type: 'open', label: 'Nov 2024 · bar',
+      intro: M`Bar on an elastic foundation: \(E\,u''-S\,u=0\) on \((0,L)\), \(u(0)=0\), \(u(L)=U\). Exact solution \(u=U\dfrac{e^{x/\lambda}-e^{-x/\lambda}}{e^{L/\lambda}-e^{-L/\lambda}}\), \(\lambda=\sqrt{E/S}\).`,
+      parts: [
+        { id: '10a', pts: 4, q: 'Are the boundary conditions essential or natural?', sol: [M`Both prescribe \(u\) itself, not a derivative: both are essential.`], load: () => goBc('bar', 1) },
+        { id: '10b', pts: 8, q: 'Verify the exact solution.', sol: [M`\(u''=\tfrac{U}{\lambda^2}\dfrac{e^{x/\lambda}-e^{-x/\lambda}}{e^{L/\lambda}-e^{-L/\lambda}}\), so \(E\,u''-S\,u=\big(\tfrac{E}{\lambda^2}-S\big)\dfrac{e^{x/\lambda}-e^{-x/\lambda}}{e^{L/\lambda}-e^{-L/\lambda}}=0\) because \(\lambda^2=E/S\).`, M`\(u(0)=U\cdot0=0\) and \(u(L)=U\cdot1=U\): both boundary conditions hold.`] },
+        { id: '10c', pts: 12, q: 'Derive the weak formulation. Give the weighted residuals formulation and the product rule used.', sol: wfSteps('bar'), load: () => goW('bar') },
+        { id: '10d', pts: 6, q: M`The program sets <code>m = 10; n = m + 1</code>, <code>xi = [-1/sqrt(3); 1/sqrt(3)]</code>, <code>w = [1; 1]</code>. Which element type, and how many integration points?`, sol: [M`\(n=m+1\) nodes for \(m\) elements means two nodes per element: linear elements.`, M`<code>xi</code> and <code>w</code> hold two entries: 2-point Gauss integration per element.`] },
+        { id: '10e', pts: 8, q: 'Complete lines 33, 34, 41 and 42 so that the boundary conditions are applied.', sol: [`Essential conditions at the first and last node; no external nodal loads on the free nodes:<pre class="code">33 iig = [1 n];\n34 iif = setdiff(1:n, iig);\n41 ug = [0 U]';\n42 qf = zeros(n-2, 1);</pre>`] },
+      ],
+    },
+  ]);
+});
+</script>
+</body>
+</html>

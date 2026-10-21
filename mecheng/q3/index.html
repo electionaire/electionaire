@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4MC10 exam trainer</title>
+<meta name="theme-color" content="#0E0D0C">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="../assets/lab.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/lab.js"></script>
+<style>
+@media (min-width: 1100px) and (min-height: 640px) { .split.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); } }
+.legend2 { display: flex; gap: 1rem; font: 400 .7rem var(--mono); color: var(--muted); }
+.legend2 i { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top" id="top"></header>
+  <main class="stage">
+    <section class="view tri" data-view="main">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method</h2>
+          <ol class="steps">
+            <li><span><b>Find the update line</b> inside the time loop. It decides the answer; the rest is setup.</span></li>
+            <li><span><b>Explicit or implicit?</b> If \(u_{n+1}\) comes from multiplying known values, such as <code>uh(:,n)+h*A*uh(:,n)</code>, the scheme is explicit. If it needs a linear solve with <code>\</code> on a matrix containing \(h\), such as <code>(I-h*A)\uh(:,n)</code>, it is implicit.</span></li>
+            <li><span><b>Rewrite as a difference quotient.</b> \(\frac{u_{n+1}-u_n}{h}=A\,u_n\) is forward Euler; \(\frac{u_{n+1}-u_n}{h}=A\,u_{n+1}\) is backward Euler. The right-hand side is the \(f(u)\) of \(\frac{du}{dt}=f(u)\).</span></li>
+            <li><span><b>Read the initial condition.</b> <code>uh(:,1)</code> is the value at \(t_0=0\), because Matlab counts from 1. <code>th = h*(0:N)</code> with \(T=Nh\) gives the interval \((0,T)\).</span></li>
+            <li><span><b>Reject the look-alikes.</b> \(\frac{du}{dt}=u+Au\) would need <code>I+h*(I+A)</code>; \(u(1)\) as initial condition would need the time grid to start at 1.</span></li>
+          </ol>
+          <div class="key">Implicit schemes cost a solve per step but stay stable for large \(h\) on decaying problems. Set \(N=10\) in the lab and compare forward and backward Euler.</div>
+        </section>
+      </div>
+      <div class="col c-lab">
+        <section class="card grow">
+          <div class="card-h"><h2>Lab · run the script</h2><div id="sch"></div></div>
+          <div class="row"><span class="lbl">Try</span><button data-p="feb25">Feb 2025 P3</button><button data-p="nov24">Nov 2024 P3</button>
+            <div class="ctl" style="flex:1;min-width:12rem"><label for="sN">N<span>steps, h = T/N</span><output id="oN"></output></label><input type="range" id="sN" min="0.3" max="3" step="0.01"></div></div>
+          <div class="split two">
+            <div class="col" style="gap:.5rem"><pre class="code" id="code"></pre><div id="deriv"></div></div>
+            <div class="col" style="gap:.45rem">
+              <div class="fill"><canvas id="cv" role="img" aria-label="First component of the numerical solution against the exact solution"></canvas></div>
+              <div class="legend2"><span><i style="background:var(--soft)"></i>exact u₁(t)</span><span><i style="background:var(--ink)"></i>script u₁ at tₙ</span></div>
+              <dl class="facts" id="facts"></dl>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="col c-exam">
+        <section class="card grow"><h2>Past exams</h2><div id="exam"></div></section>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const { M, fmt, sci, math } = Lab;
+  Lab.header(3);
+  const PRE = {
+    feb25: { A: [[-1, 1], [-1, -1]], u0: [1, 0], u0s: '1;0', T: 10, N: 1000, s: 'fe' },
+    nov24: { A: [[-3, 1], [1, -3]], u0: [Math.PI, 0], u0s: 'pi;0', T: 10, N: 10, s: 'be' },
+  };
+  const S = Object.assign({}, PRE.feb25);
+  const UPD = { fe: 'uh(:,n+1) = uh(:,n) + h*A*uh(:,n);', be: 'uh(:,n+1) = (I - h*A)\\uh(:,n);', tr: 'uh(:,n+1) = (I - h/2*A)\\((I + h/2*A)*uh(:,n));' };
+  const NAME = { fe: 'forward Euler', be: 'backward Euler', tr: 'trapezoidal (Crank–Nicolson)' };
+  const setS = Lab.seg(document.getElementById('sch'), [{ v: 'fe', label: 'Forward Euler' }, { v: 'be', label: 'Backward Euler' }, { v: 'tr', label: 'Trapezoidal' }], S.s, v => { S.s = v; render(); });
+  const sN = document.getElementById('sN');
+  sN.addEventListener('input', () => { S.N = Math.max(2, Math.round(10 ** +sN.value)); render(); });
+  const load = k => { Object.assign(S, PRE[k]); render(); };
+  document.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => load(b.dataset.p)));
+
+  const mv = (A, u) => [A[0][0] * u[0] + A[0][1] * u[1], A[1][0] * u[0] + A[1][1] * u[1]];
+  function solve2(B, r) { const d = B[0][0] * B[1][1] - B[0][1] * B[1][0]; return [(r[0] * B[1][1] - B[0][1] * r[1]) / d, (B[0][0] * r[1] - r[0] * B[1][0]) / d]; }
+  function run() {
+    const h = S.T / S.N, A = S.A, out = [S.u0.slice()];
+    const IhA = (c) => [[1 + c * h * A[0][0], c * h * A[0][1]], [c * h * A[1][0], 1 + c * h * A[1][1]]];
+    let u = S.u0.slice();
+    for (let n = 0; n < S.N; n++) {
+      if (S.s === 'fe') u = mv(IhA(1), u);
+      else if (S.s === 'be') u = solve2(IhA(-1), u);
+      else u = solve2(IhA(-0.5), mv(IhA(0.5), u));
+      out.push(u);
+    }
+    return out;
+  }
+  function exact() {
+    const n = 4000, dt = S.T / n, A = S.A, f = u => mv(A, u), out = [S.u0.slice()];
+    let u = S.u0.slice();
+    for (let k = 0; k < n; k++) {
+      const k1 = f(u), k2 = f([u[0] + dt / 2 * k1[0], u[1] + dt / 2 * k1[1]]), k3 = f([u[0] + dt / 2 * k2[0], u[1] + dt / 2 * k2[1]]), k4 = f([u[0] + dt * k3[0], u[1] + dt * k3[1]]);
+      u = [u[0] + dt / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]), u[1] + dt / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])];
+      out.push(u);
+    }
+    return out;
+  }
+  function eig() {
+    const A = S.A, tr = A[0][0] + A[1][1], det = A[0][0] * A[1][1] - A[0][1] * A[1][0], disc = tr * tr / 4 - det;
+    return disc >= 0 ? [[tr / 2 + Math.sqrt(disc), 0], [tr / 2 - Math.sqrt(disc), 0]] : [[tr / 2, Math.sqrt(-disc)], [tr / 2, -Math.sqrt(-disc)]];
+  }
+  const absR = (x, y) => S.s === 'fe' ? Math.hypot(1 + x, y) : S.s === 'be' ? 1 / Math.hypot(1 - x, y) : Math.hypot(1 + x / 2, y / 2) / Math.hypot(1 - x / 2, y / 2);
+
+  const cv = document.getElementById('cv');
+  function draw() {
+    const { g, W, H } = Lab.canvas(cv);
+    const num = run(), ex = exact();
+    const L = 34, R = W - 10, T = 10, B = H - 22;
+    let lo = Math.min(...ex.map(u => u[0])), hi = Math.max(...ex.map(u => u[0]));
+    const pad = (hi - lo) * .35 + .1; lo -= pad; hi += pad;
+    const X = t => L + t / S.T * (R - L), Y = v => B - (v - lo) / (hi - lo) * (B - T);
+    g.strokeStyle = Lab.tok('--line'); g.lineWidth = 1; g.beginPath(); g.moveTo(L, Y(0)); g.lineTo(R, Y(0)); g.moveTo(L, T); g.lineTo(L, B); g.stroke();
+    g.fillStyle = Lab.tok('--muted'); g.font = '10px ' + Lab.tok('--mono'); g.textAlign = 'center';
+    for (let k = 0; k <= 5; k++) g.fillText(fmt(S.T * k / 5, 1), X(S.T * k / 5), B + 14);
+    g.textAlign = 'right'; g.fillText(fmt(hi, 1), L - 4, T + 8); g.fillText(fmt(lo, 1), L - 4, B); g.fillText('0', L - 4, Y(0) + 3);
+    g.save(); g.beginPath(); g.rect(L, T, R - L, B - T); g.clip();
+    g.strokeStyle = Lab.tok('--soft'); g.lineWidth = 1.5; g.beginPath();
+    ex.forEach((u, k) => { const x = X(k * S.T / (ex.length - 1)), y = Y(u[0]); k ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+    g.strokeStyle = Lab.tok('--ink'); g.fillStyle = Lab.tok('--ink'); g.lineWidth = 1.5; g.beginPath();
+    num.forEach((u, k) => { const x = X(k * S.T / S.N), y = Y(Math.max(lo - 10 * (hi - lo), Math.min(hi + 10 * (hi - lo), u[0]))); k ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+    if (S.N <= 60) num.forEach((u, k) => { g.beginPath(); g.arc(X(k * S.T / S.N), Y(u[0]), 2.5, 0, 7); g.fill(); });
+    g.restore();
+    const peak = Math.max(...num.map(u => Math.abs(u[0])));
+    if (peak > Math.max(Math.abs(hi), Math.abs(lo)) * 1.01) {
+      g.fillStyle = Lab.tok('--boom'); g.textAlign = 'left'; g.font = '600 11px ' + Lab.tok('--mono');
+      g.fillText(`leaves the plot: |u₁| reaches ${sci(peak)}`, L + 6, T + 12);
+    }
+  }
+  function render() {
+    setS(S.s);
+    sN.value = Math.log10(S.N); document.getElementById('oN').textContent = S.N;
+    const h = S.T / S.N, A = S.A;
+    const As = `[${A[0].join(' ')};${A[1].join(' ')}]`;
+    const lines = [`T = ${S.T}; N = ${S.N}; h = T/N;`, 'uh = zeros(2,N+1);', 'th = h*(0:N);', `uh(:,1) = [${S.u0s}];`, `A = ${As};`, 'I = [1 0;0 1];', 'for n = 1:N', '    tn = n*h;', '    ' + UPD[S.s], 'end', 'plot(th,uh(1,:))'];
+    document.getElementById('code').innerHTML = lines.map((l, k) => { const t = `${String(k + 1).padStart(2)}  ${l.replace(/&/g, '&amp;').replace(/</g, '&lt;')}`; return k === 8 ? `<span class="hl">${t}</span>` : k === 3 ? `<span class="hl">${t}</span>` : t; }).join('\n');
+    const At = `\\begin{pmatrix}${A[0].join('&')}\\\\${A[1].join('&')}\\end{pmatrix}`;
+    const u0t = S.u0s === 'pi;0' ? '\\begin{pmatrix}\\pi\\\\0\\end{pmatrix}' : `\\begin{pmatrix}${S.u0[0]}\\\\${S.u0[1]}\\end{pmatrix}`;
+    const rec = {
+      fe: M`\vec u_{n+1}=\vec u_n+hA\vec u_n\ \Rightarrow\ \frac{\vec u_{n+1}-\vec u_n}{h}=A\,\vec u_{n}`,
+      be: M`(I-hA)\vec u_{n+1}=\vec u_n\ \Rightarrow\ \frac{\vec u_{n+1}-\vec u_n}{h}=A\,\vec u_{n+1}`,
+      tr: M`\frac{\vec u_{n+1}-\vec u_n}{h}=A\,\frac{\vec u_n+\vec u_{n+1}}{2}`,
+    }[S.s];
+    const why = S.s === 'fe' ? 'explicit: the right-hand side only uses the known u<sub>n</sub>, so one multiplication per step' : 'implicit: u<sub>n+1</sub> appears on both sides, so every step solves a linear system with backslash';
+    document.getElementById('deriv').innerHTML = `
+      <div class="eq">\\[${rec}\\]</div>
+      <p class="note">Line 9 is ${NAME[S.s]}, ${why}.</p>
+      <div class="eq">\\[\\frac{d\\vec u}{dt}=${At}\\vec u,\\quad \\vec u(0)=${u0t}\\]</div>
+      <p class="note">This is the initial-value problem the script solves, for \\(t\\in(0,${S.T})\\).</p>`;
+    math(document.getElementById('deriv'));
+    const E = eig(), rs = E.map(([re, im]) => absR(h * re, h * im));
+    const stable = rs.every(r => r <= 1 + 1e-9);
+    const lam = E.map(([re, im]) => im ? `${fmt(re, 2)} ${im > 0 ? '+' : '−'} ${fmt(Math.abs(im), 2)}i` : fmt(re, 2));
+    document.getElementById('facts').innerHTML = `
+      <dt>h</dt><dd class="mono">${fmt(h, 4)}</dd>
+      <dt>Eigenvalues of A</dt><dd class="mono">${[...new Set(lam)].join(', ')}</dd>
+      <dt>|R(hλ)|</dt><dd class="mono">${[...new Set(rs.map(r => fmt(r, 3)))].join(', ')}</dd>
+      <dt>Verdict</dt><dd class="${stable ? 'ok' : 'bad'}">${stable ? 'stable for this h' : 'unstable: |R| > 1, the error grows every step'}</dd>`;
+    draw();
+  }
+  Lab.watch(cv.parentElement, draw);
+  render();
+
+  const script = (u0, A, upd, T, N) => `<pre class="code">T = ${T}; N = ${N}; h = T/N;\nuh = zeros(2,N+1);\nth = h*(0:N);\nuh(:,1) = [${u0}];\nA = ${A};\nI = [1 0;0 1];\nfor n = 1:N\n    tn = n*h;\n    <span class="hl">${upd}</span>\nend</pre>`;
+  const ivp = (rhs, ic) => M`\(\dfrac{d\vec u}{dt}=${rhs},\ ${ic}\)`;
+  const A1 = '\\begin{pmatrix}-1&1\\\\-1&-1\\end{pmatrix}', A2 = '\\begin{pmatrix}-3&1\\\\1&-3\\end{pmatrix}';
+  Lab.exam(document.getElementById('exam'), [
+    {
+      label: 'Feb 2025 · P3',
+      q: 'Which statement about this script is correct?' + script('1;0', '[-1 1;-1 -1]', 'uh(:,n+1)=uh(:,n)+h*A*uh(:,n);', 10, 1000),
+      opts: ['Explicit scheme for ' + ivp(A1 + '\\vec u', '\\vec u(0)=(1,0)^T'), 'Implicit scheme for ' + ivp(A1 + '\\vec u', '\\vec u(0)=(1,0)^T'), 'Explicit scheme for ' + ivp('\\vec u+' + A1 + '\\vec u', '\\vec u(0)=(1,0)^T'), 'Implicit scheme for ' + ivp('\\vec u+' + A1 + '\\vec u', '\\vec u(0)=(1,0)^T')],
+      answer: 0,
+      sol: [
+        M`The highlighted update (line 11 in the exam) reads \(\vec u_{n+1}=\vec u_n+hA\vec u_n\), i.e. \(\frac{\vec u_{n+1}-\vec u_n}{h}=A\vec u_n\): forward Euler for \(\frac{d\vec u}{dt}=A\vec u\).`,
+        M`It only multiplies known values by \(I+hA\), with no solve: explicit.`,
+        M`<code>uh(:,1) = [1;0]</code> is the value at \(t=0\). Answer <b>a</b>.`,
+      ],
+      load: () => load('feb25'),
+    },
+    {
+      label: 'Nov 2024 · P3',
+      q: 'Which statement about this script is correct?' + script('pi;0', '[-3 1;1 -3]', 'uh(:,n+1)=(I-h*A)\\uh(:,n);', 10, 10),
+      opts: ['Explicit scheme for ' + ivp(A2 + '\\vec u', '\\vec u(0)=(\\pi,0)^T'), 'Implicit scheme for ' + ivp('\\vec u-' + A2 + '\\vec u', '\\vec u(0)=(\\pi,0)^T'), 'Implicit scheme for ' + ivp(A2 + '\\vec u', '\\vec u(0)=(\\pi,0)^T'), 'Explicit scheme for ' + ivp(A2 + '\\vec u', '\\vec u(1)=(\\pi,0)^T')],
+      answer: 2,
+      sol: [
+        M`Line 9 gives \(\vec u_{n+1}=(I-hA)^{-1}\vec u_n\), so \((I-hA)\vec u_{n+1}=\vec u_n\) and \(\frac{\vec u_{n+1}-\vec u_n}{h}=A\vec u_{n+1}\): backward Euler for \(\frac{d\vec u}{dt}=A\vec u\).`,
+        M`The step needs the solve \((I-hA)\backslash\vec u_n\): implicit.`,
+        M`Line 4 sets \(\vec u(0)=(\pi,0)^T\). Answer <b>c</b>.`,
+      ],
+      load: () => load('nov24'),
+    },
+  ]);
+});
+</script>
+</body>
+</html>

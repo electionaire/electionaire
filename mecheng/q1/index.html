@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4MC10 exam trainer</title>
+<meta name="theme-color" content="#0E0D0C">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="../assets/lab.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/lab.js"></script>
+<style>
+.labview { display: flex; flex-direction: column; gap: .6rem; min-height: 0; flex: 1 1 auto; }
+.mx { border-collapse: collapse; font: 400 .8rem var(--mono); }
+.mx td { width: 2.1rem; height: 1.7rem; text-align: center; border: 1px solid var(--line); color: var(--soft); }
+.mx td.sep { border: none; width: .6rem; }
+.mx td.row { background: var(--ink-soft); color: var(--strong); }
+.mx td.use { background: var(--blue-soft); color: var(--blue); }
+.mx td.diag { outline: 1px solid var(--ink); color: var(--ink); }
+.mx td.new { background: var(--live-soft); color: var(--live); font-weight: 500; }
+.mx td.zero { color: #4a4640; }
+.mx th { font: 400 .58rem var(--sans); letter-spacing: .15em; color: var(--muted); padding-bottom: .2rem; text-transform: uppercase; }
+.lu { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+.stepbar { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+.stepbar .count { font: 400 .72rem var(--mono); color: var(--muted); margin-left: auto; }
+@media (min-width: 1100px) and (min-height: 640px) {
+  .split.two { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top" id="top"></header>
+  <main class="stage">
+    <section class="view tri" data-view="main">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method</h2>
+          <ol class="steps">
+            <li><span><b>Check for singularity first.</b> Two equal or proportional rows (or columns), or \(\det A = 0\), make \(A\) singular and \(\operatorname{cond}(A)=\infty\).</span></li>
+            <li><span><b>Singular: count solutions.</b> \(Ax=b\) is solvable only if \(b\) obeys the same dependency as the rows. Consistent gives infinitely many solutions (add any null vector), inconsistent gives none.</span></li>
+            <li><span><b>Nonsingular: exactly one solution.</b> \(\operatorname{cond}_2(A)=\sigma_{\max}/\sigma_{\min}\). For symmetric \(A\) this is \(|\lambda|_{\max}/|\lambda|_{\min}\) of the eigenvalues.</span></li>
+            <li><span><b>Use block structure.</b> A lone diagonal entry is itself an eigenvalue. Include it when you pick the largest and smallest.</span></li>
+            <li><span><b>Triangular solves.</b> \(LUx=b\): forward substitution \(Ly=b\) from the top, then backward substitution \(Ux=y\) from the bottom.</span></li>
+          </ol>
+          <div class="key">\(y_i=\dfrac{b_i-\sum_{j&lt;i}L_{ij}y_j}{L_{ii}}\qquad x_i=\dfrac{y_i-\sum_{j&gt;i}U_{ij}x_j}{U_{ii}}\)</div>
+          <div class="trap"><b>Trap.</b> In Nov 2024 the 2×2 block alone has eigenvalues 6 and 14, but the decoupled 1 is smaller, so \(\operatorname{cond}=14/1\), not \(14/6\).</div>
+        </section>
+      </div>
+
+      <div class="col c-lab">
+        <section class="card grow" id="labCard">
+          <div class="card-h"><h2>Lab</h2><div id="labTabs"></div></div>
+
+          <div class="labview" id="rowView">
+            <p class="kid">Every exam matrix is block diagonal: \(x_1\) decouples, and the 2×2 block is two lines in the \((x_2,x_3)\) plane. Crossing lines: one solution. Parallel: none. The same line: infinitely many. Nearly parallel lines: a large condition number.</p>
+            <div class="controls" id="ctls"></div>
+            <div class="row"><span class="lbl">Try</span>
+              <button data-p="nov24">Nov 2024 P1</button><button data-p="feb25">Feb 2025 P1</button>
+              <button data-p="none">No solution</button><button data-p="ill">Ill-conditioned</button>
+            </div>
+            <div class="split two">
+              <div class="fill"><canvas id="plane" role="img" aria-label="The two equations of the 2 by 2 block drawn as lines"></canvas></div>
+              <div id="rowOut" class="col" style="gap:.4rem"></div>
+            </div>
+          </div>
+
+          <div class="labview" id="luView" hidden>
+            <p class="kid">Nov 2025 P1 runs two loops. Lines 1–7 sweep down through \(L\) (forward substitution), lines 8–16 sweep up through \(U\) (backward substitution).</p>
+            <div class="stepbar"><button id="luBack">Back</button><button id="luNext" class="solid">Next step</button><button id="luReset">Reset</button><span class="count" id="luCount"></span></div>
+            <div class="eq eqbox" id="luEq"></div>
+            <div class="lu">
+              <div><table class="mx" id="fwd"></table></div>
+              <div><table class="mx" id="bwd"></table></div>
+            </div>
+            <pre class="code" id="pseudo"></pre>
+          </div>
+        </section>
+      </div>
+
+      <div class="col c-exam">
+        <section class="card grow"><h2>Past exams</h2><div id="exam"></div></section>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const { M, fmt, frac, math } = Lab;
+  Lab.header(1);
+
+  /* ---------- row picture ---------- */
+  const S = { d: 1, p: 10, q: -4, r: -4, s: 10, b1: 1, b2: 6, b3: 6 };
+  const CT = [
+    ['d', 'A₁₁', -12, 12], ['p', 'A₂₂', -12, 12], ['q', 'A₂₃', -12, 12], ['r', 'A₃₂', -12, 12],
+    ['s', 'A₃₃', -12, 12], ['b1', 'b₁', -10, 10], ['b2', 'b₂', -10, 10], ['b3', 'b₃', -10, 10],
+  ];
+  const ctls = document.getElementById('ctls');
+  ctls.innerHTML = CT.map(([k, lab, a, b]) => `<div class="ctl"><label for="s_${k}">${lab}<span></span><output id="o_${k}"></output></label><input type="range" id="s_${k}" min="${a}" max="${b}" step="0.1"></div>`).join('');
+  CT.forEach(([k]) => document.getElementById('s_' + k).addEventListener('input', e => { S[k] = +e.target.value; renderRow(); }));
+  const PRE = {
+    nov24: { d: 1, p: 10, q: -4, r: -4, s: 10, b1: 1, b2: 6, b3: 6 },
+    feb25: { d: 1, p: 1, q: 1, r: 1, s: 1, b1: 1, b2: 2, b3: 2 },
+    none: { d: 1, p: 1, q: 1, r: 1, s: 1, b1: 1, b2: 2, b3: 3 },
+    ill: { d: 1, p: 1, q: 1, r: 1, s: 1.1, b1: 1, b2: 2, b3: 2.1 },
+  };
+  document.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => { Object.assign(S, PRE[b.dataset.p]); renderRow(); }));
+
+  const EPS = 1e-9;
+  function analyse() {
+    const { d, p, q, r, s, b1, b2, b3 } = S;
+    const detB = p * s - q * r, det = d * detB;
+    const sym = Math.abs(q - r) < EPS;
+    let vals, kind;
+    if (sym) {
+      const m = (p + s) / 2, rad = Math.sqrt(((p - s) / 2) ** 2 + q * q);
+      vals = [d, m + rad, m - rad]; kind = 'eig';
+    } else {
+      const a = p * p + r * r, c = q * q + s * s, bb = p * q + r * s;
+      const m = (a + c) / 2, rad = Math.sqrt(((a - c) / 2) ** 2 + bb * bb);
+      vals = [Math.abs(d), Math.sqrt(m + rad), Math.sqrt(Math.max(0, m - rad))]; kind = 'sv';
+    }
+    const mags = vals.map(Math.abs), mx = Math.max(...mags), mn = Math.min(...mags);
+    const cond = mn < EPS ? Infinity : mx / mn;
+    let sols;
+    if (Math.abs(det) > EPS) sols = 1;
+    else {
+      const row1ok = Math.abs(d) > EPS || Math.abs(b1) < EPS;
+      let blockOk;
+      if (Math.abs(detB) > EPS) blockOk = true;
+      else blockOk = Math.abs(p * b3 - r * b2) < EPS && Math.abs(q * b3 - s * b2) < EPS && !((Math.abs(p) + Math.abs(q) < EPS && Math.abs(b2) > EPS) || (Math.abs(r) + Math.abs(s) < EPS && Math.abs(b3) > EPS));
+      sols = row1ok && blockOk ? Infinity : 0;
+    }
+    return { det, detB, sym, vals, kind, cond, sols };
+  }
+
+  const plane = document.getElementById('plane');
+  function drawPlane() {
+    const { g, W, H } = Lab.canvas(plane);
+    const R = 6, u = Math.min(W, H) / (2 * R + 1), cx = W / 2, cy = H / 2;
+    const X = x => cx + x * u, Y = y => cy - y * u;
+    const line = Lab.tok('--line'), muted = Lab.tok('--muted');
+    g.strokeStyle = line; g.lineWidth = 1;
+    for (let k = -R; k <= R; k++) { g.globalAlpha = k === 0 ? 1 : .35; g.beginPath(); g.moveTo(X(k), Y(-R)); g.lineTo(X(k), Y(R)); g.moveTo(X(-R), Y(k)); g.lineTo(X(R), Y(k)); g.stroke(); }
+    g.globalAlpha = 1; g.fillStyle = muted; g.font = '11px ' + Lab.tok('--mono');
+    g.fillText('x₂', X(R) - 14, Y(0) - 6); g.fillText('x₃', X(0) + 6, Y(R) + 12);
+    const A = analyse();
+    const drawLine = (a, b, c, col, w, dash) => {
+      g.strokeStyle = col; g.lineWidth = w; g.setLineDash(dash || []);
+      g.beginPath();
+      if (Math.abs(b) > EPS) { g.moveTo(X(-R), Y((c + a * R) / b)); g.lineTo(X(R), Y((c - a * R) / b)); }
+      else if (Math.abs(a) > EPS) { g.moveTo(X(c / a), Y(-R)); g.lineTo(X(c / a), Y(R)); }
+      g.stroke(); g.setLineDash([]);
+    };
+    g.save(); g.beginPath(); g.rect(X(-R), Y(R), 2 * R * u, 2 * R * u); g.clip();
+    const same = A.sols === Infinity && Math.abs(A.detB) < EPS;
+    drawLine(S.p, S.q, S.b2, Lab.tok('--ink'), 2);
+    drawLine(S.r, S.s, S.b3, same ? Lab.tok('--live') : Lab.tok('--blue'), same ? 4 : 2, same ? [8, 6] : null);
+    g.restore();
+    g.font = '600 11px ' + Lab.tok('--mono');
+    g.fillStyle = Lab.tok('--ink'); g.fillText('row 2', 8, 16);
+    g.fillStyle = Lab.tok('--blue'); g.fillText('row 3', 8, 30);
+    if (Math.abs(A.detB) > EPS) {
+      const x2 = (S.b2 * S.s - S.q * S.b3) / A.detB, x3 = (S.p * S.b3 - S.r * S.b2) / A.detB;
+      if (Math.abs(x2) <= R && Math.abs(x3) <= R) {
+        g.fillStyle = Lab.tok('--live'); g.beginPath(); g.arc(X(x2), Y(x3), 5, 0, 7); g.fill();
+        g.fillText(`(${fmt(x2, 2)}, ${fmt(x3, 2)})`, X(x2) + 8, Y(x3) - 8);
+      }
+    }
+  }
+
+  function renderRow() {
+    CT.forEach(([k]) => { document.getElementById('s_' + k).value = S[k]; document.getElementById('o_' + k).textContent = fmt(S[k], 1); });
+    const A = analyse(), f = v => fmt(v, 2).replace('−', '-');
+    const valsTex = A.vals.map(v => f(v)).join(',\\ ');
+    const solTxt = A.sols === 1 ? 'exactly one' : A.sols === 0 ? 'none' : 'infinitely many';
+    const cls = A.sols === 1 ? 'ok' : 'bad';
+    document.getElementById('rowOut').innerHTML = `
+      <div class="eq">\\[A=\\begin{pmatrix}${f(S.d)}&0&0\\\\0&${f(S.p)}&${f(S.q)}\\\\0&${f(S.r)}&${f(S.s)}\\end{pmatrix},\\quad b=\\begin{pmatrix}${f(S.b1)}\\\\${f(S.b2)}\\\\${f(S.b3)}\\end{pmatrix}\\]</div>
+      <p class="verdict ${cls}">${A.sols === 1 ? 'One solution' : A.sols === 0 ? 'No solution' : 'Infinitely many'}</p>
+      <dl class="facts">
+        <dt>det A</dt><dd class="mono">${fmt(A.det, 3)}</dd>
+        <dt>Symmetric</dt><dd>${A.sym ? 'yes, so use eigenvalues' : 'no, so use singular values'}</dd>
+        <dt>${A.kind === 'eig' ? 'Eigenvalues' : 'Singular values'}</dt><dd>\\(${valsTex}\\)</dd>
+        <dt>cond(A)</dt><dd class="mono">${A.cond === Infinity ? '∞ (singular)' : fmt(A.cond, 2)}</dd>
+        <dt>Solutions</dt><dd>${solTxt}</dd>
+      </dl>
+      <p class="note">${A.sols === 1 ? 'The lines cross once. The closer they are to parallel, the larger cond(A) becomes.' : A.sols === 0 ? 'The lines are parallel but not equal: the right-hand side breaks the row dependency.' : 'The lines coincide: the right-hand side obeys the same dependency as the rows.'}</p>`;
+    math(document.getElementById('rowOut'));
+    drawPlane();
+  }
+
+  /* ---------- LU stepper ---------- */
+  const L = [[1, 0, 0, 0], [2, 3, 0, 0], [4, 5, 6, 0], [7, 8, 9, 10]];
+  const U = [[1, 2, 3, 4], [0, 5, 6, 7], [0, 0, 8, 9], [0, 0, 0, 10]];
+  const b = [3, 21, 37, 61];
+  const y = [], x = [];
+  for (let i = 0; i < 4; i++) { let s = b[i]; for (let j = 0; j < i; j++) s -= L[i][j] * y[j]; y[i] = s / L[i][i]; }
+  for (let i = 3; i >= 0; i--) { let s = y[i]; for (let j = i + 1; j < 4; j++) s -= U[i][j] * x[j]; x[i] = s / U[i][i]; }
+  const CODE = ['for i = 1 to 4 do', '  βi = bi', '  for j = 1 to i − 1 do', '    βi = βi − Lij·yj', '  end for', '  yi = βi / Aii      (read as Lii)', 'end for',
+    'for k = 1 to 4 do', '  i = 5 − k', '  βi = yi', '  for l = 1 to k − 1 do', '    j = 5 − l', '    βi = βi − Uij·xj', '  end for', '  xi = βi / Uii', 'end for'];
+  let step = 0;
+  function tableHTML(Mx, rhs, rhsName, out, outName, cur, phase) {
+    let h = `<tr><th colspan="4">${phase === 'f' ? 'L' : 'U'}</th><th></th><th>${rhsName}</th><th></th><th>${outName}</th></tr>`;
+    for (let i = 0; i < 4; i++) {
+      h += '<tr>';
+      for (let j = 0; j < 4; j++) {
+        let c = Mx[i][j] === 0 ? 'zero' : '';
+        if (i === cur) c = j === i ? 'diag row' : (phase === 'f' ? j < i : j > i) ? 'use' : 'row';
+        h += `<td class="${c}">${Mx[i][j]}</td>`;
+      }
+      const known = phase === 'f' ? (i < cur || cur < 0 ? false : false) : false;
+      h += `<td class="sep"></td><td class="${i === cur ? 'row' : ''}">${rhs[i] ?? ''}</td><td class="sep"></td>`;
+      const done = out[i] !== undefined;
+      let oc = '';
+      if (i === cur && done) oc = 'new';
+      else if (done && cur >= 0 && (phase === 'f' ? i < cur : i > cur)) oc = 'use';
+      h += `<td class="${oc}">${done ? fmt(out[i]) : ''}</td></tr>`;
+      void known;
+    }
+    return h;
+  }
+  function renderLU() {
+    const yv = [], xv = [];
+    const fi = Math.min(step, 4), bk = Math.max(0, step - 4);
+    for (let i = 0; i < fi; i++) yv[i] = y[i];
+    for (let k = 0; k < bk; k++) xv[3 - k] = x[3 - k];
+    const curF = step >= 1 && step <= 4 ? step - 1 : -1, curB = step >= 5 ? 8 - step : -1;
+    document.getElementById('fwd').innerHTML = tableHTML(L, b, 'b', yv, 'y', curF, 'f');
+    document.getElementById('bwd').innerHTML = tableHTML(U, step >= 4 ? y : [], 'y', xv, 'x', curB, 'b');
+    let eq, hl = [];
+    if (step === 0) eq = M`\text{Start: solve } L\,y=b \text{ top-down, then } U\,x=y \text{ bottom-up.}`;
+    else if (step <= 4) {
+      const i = step - 1;
+      const terms = []; for (let j = 0; j < i; j++) terms.push(`${L[i][j]}\\cdot ${fmt(y[j])}`);
+      eq = `y_{${i + 1}}=\\frac{${b[i]}${terms.length ? ' - ' + terms.join(' - ') : ''}}{${L[i][i]}}=${fmt(y[i])}`;
+      hl = [1, 2, 3, 5];
+    } else {
+      const i = 8 - step;
+      const terms = []; for (let j = i + 1; j < 4; j++) terms.push(`${U[i][j]}\\cdot ${fmt(x[j])}`);
+      eq = `x_{${i + 1}}=\\frac{${fmt(y[i])}${terms.length ? ' - ' + terms.join(' - ') : ''}}{${U[i][i]}}=${fmt(x[i])}`;
+      hl = [8, 9, 10, 12, 14];
+    }
+    if (step === 8) eq += M`\qquad\Rightarrow\ x=(1,1,0,0)^T,\ y=(3,5,0,0)^T\ \text{(answer c)}`;
+    const el = document.getElementById('luEq');
+    el.innerHTML = `\\[${eq}\\]`; math(el);
+    document.getElementById('pseudo').innerHTML = CODE.map((l, k) => { const t = `${String(k + 1).padStart(2)}: ${l}`; return hl.includes(k) ? `<span class="hl">${t}</span>` : t; }).join('\n');
+    document.getElementById('luCount').textContent = `step ${step} / 8`;
+    document.getElementById('luBack').disabled = step === 0;
+    document.getElementById('luNext').disabled = step === 8;
+  }
+  document.getElementById('luNext').addEventListener('click', () => { step = Math.min(8, step + 1); renderLU(); });
+  document.getElementById('luBack').addEventListener('click', () => { step = Math.max(0, step - 1); renderLU(); });
+  document.getElementById('luReset').addEventListener('click', () => { step = 0; renderLU(); });
+
+  /* ---------- lab tabs ---------- */
+  const setTab = Lab.seg(document.getElementById('labTabs'), [{ v: 'row', label: 'Row picture' }, { v: 'lu', label: 'LU substitution' }], 'row', v => showTab(v));
+  function showTab(v) {
+    setTab(v);
+    document.getElementById('rowView').hidden = v !== 'row';
+    document.getElementById('luView').hidden = v !== 'lu';
+    if (v === 'row') drawPlane();
+  }
+  Lab.watch(plane.parentElement, drawPlane);
+  renderRow(); renderLU();
+
+  /* ---------- past exams ---------- */
+  const mat = (rows) => `\\begin{pmatrix}${rows.map(r => r.join('&')).join('\\\\')}\\end{pmatrix}`;
+  Lab.exam(document.getElementById('exam'), [
+    {
+      label: 'Nov 2025 · P1',
+      q: M`Given \(L=${mat([[1,0,0,0],[2,3,0,0],[4,5,6,0],[7,8,9,10]])}\), \(U=${mat([[1,2,3,4],[0,5,6,7],[0,0,8,9],[0,0,0,10]])}\), \(b=(3,21,37,61)^T\), the algorithm sweeps down through \(L\) and then up through \(U\). Which statement is correct?`,
+      opts: [M`\(x=(1,2,3,4)^T,\ y=(4,5,0,0)^T\)`, M`\(x=(1,2,0,0)^T,\ y=(5,6,0,0)^T\)`, M`\(x=(1,1,0,0)^T,\ y=(3,5,0,0)^T\)`, M`\(x=(14,23,18,6)^T,\ y=(1,2,3,4)^T\)`],
+      answer: 2,
+      sol: [
+        M`Lines 1–7 are forward substitution for \(Ly=b\); lines 8–16 are backward substitution for \(Ux=y\). Together they solve \(LUx=b\).`,
+        M`\(y_1=3,\ y_2=\tfrac{21-2\cdot3}{3}=5,\ y_3=\tfrac{37-4\cdot3-5\cdot5}{6}=0,\ y_4=\tfrac{61-7\cdot3-8\cdot5-9\cdot0}{10}=0\).`,
+        M`\(x_4=0,\ x_3=0,\ x_2=\tfrac{5-6\cdot0-7\cdot0}{5}=1,\ x_1=\tfrac{3-2\cdot1}{1}=1\).`,
+        M`So \(x=(1,1,0,0)^T\) and \(y=(3,5,0,0)^T\): answer <b>c</b>.`,
+      ],
+      load: () => { showTab('lu'); step = 0; renderLU(); },
+    },
+    {
+      label: 'Feb 2025 · P1',
+      q: M`\(A=${mat([[1,0,0],[0,1,1],[0,1,1]])}\), \(b=(1,2,2)^T\). Which statement is correct?`,
+      opts: [M`\(\operatorname{cond}(A)=5\), one solution`, M`\(\operatorname{cond}(A)=14\), one solution`, M`\(\operatorname{cond}(A)=\infty\), no solution`, M`\(\operatorname{cond}(A)=\infty\), infinitely many solutions`],
+      answer: 3,
+      sol: [
+        M`Rows 2 and 3 are identical, so \(A\) is singular and \(\operatorname{cond}(A)=\infty\). The eigenvalues are \(0,1,2\), so \(\lambda_{\min}=0\).`,
+        M`The right-hand side has \(b_2=b_3=2\): it follows the same dependency, so the system is consistent.`,
+        M`\(x=(1,1,1)^T+c\,(0,1,-1)^T\) solves it for any \(c\): infinitely many solutions, answer <b>d</b>.`,
+      ],
+      load: () => { showTab('row'); Object.assign(S, PRE.feb25); renderRow(); },
+    },
+    {
+      label: 'Nov 2024 · P1',
+      q: M`\(A=${mat([[1,0,0],[0,10,-4],[0,-4,10]])}\). Which statement is correct?`,
+      opts: [M`\(\operatorname{cond}(A)=5\), one solution`, M`\(\operatorname{cond}(A)=\infty\), no solution`, M`\(\operatorname{cond}(A)=14\), one solution`, M`\(\operatorname{cond}(A)=5\), infinitely many solutions`],
+      answer: 2,
+      sol: [
+        M`\(A\) is symmetric. \(\det(A-\lambda I)=(1-\lambda)\big((10-\lambda)^2-16\big)=0\) gives \(\lambda=1,6,14\).`,
+        M`All eigenvalues are positive, so \(A\) is SPD and nonsingular: exactly one solution.`,
+        M`\(\operatorname{cond}(A)=\lambda_{\max}/\lambda_{\min}=14/1=14\): answer <b>c</b>. Do not forget the decoupled eigenvalue 1.`,
+      ],
+      load: () => { showTab('row'); Object.assign(S, PRE.nov24); renderRow(); },
+    },
+  ]);
+});
+</script>
+</body>
+</html>

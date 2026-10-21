@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4MC10 exam trainer</title>
+<meta name="theme-color" content="#0E0D0C">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="../assets/lab.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/lab.js"></script>
+<style>
+.t input { width: 7.5rem; }
+@media (min-width: 1100px) and (min-height: 640px) {
+  #ratioCard { flex: 1.25 1 0; } #dataCard { flex: 1 1 0; }
+  .split.two { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top" id="top"></header>
+  <main class="stage">
+    <section class="view tri" data-view="main">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method</h2>
+          <ol class="steps">
+            <li><span><b>Turn the symbol into a limit.</b> \(f=O(g)\) as \(h\to0\) means \(|f/g|\) stays bounded; \(f=o(g)\) means \(|f/g|\to0\). Every \(o\) is also an \(O\).</span></li>
+            <li><span><b>Form the ratio and simplify.</b> \(\frac{h\ln|h|}{h}=\ln|h|\to-\infty\): unbounded, so \(h\ln|h|\) is neither \(O(h)\) nor \(o(h)\).</span></li>
+            <li><span><b>Logarithms lose to any power.</b> \(h^{a}\ln|h|\to0\) for every \(a\gt0\). So \(h^{3/2}\ln|h|=h\cdot h^{1/2}\ln|h|=o(h)\), hence \(O(h)\).</span></li>
+            <li><span><b>Use the algebra rules.</b> \(O(h^p)\,O(h^q)=O(h^{p+q})\), \(O(h^p)+O(h^{p+1})=O(h^p)\), \(O(h^{p+2})/h^{p}=O(h^2)\).</span></li>
+            <li><span><b>Observed order from data.</b> Halving \(h\) divides the error by about \(2^p\), so \(p\approx\log_2\frac{e(h)}{e(h/2)}\). Trust the smallest \(h\).</span></li>
+            <li><span><b>Points, derivative and order.</b> An optimal \(q\)-point finite-difference formula for a \(k\)-th derivative has order \(p\) with \(k+p=q\).</span></li>
+          </ol>
+          <div class="trap"><b>Trap.</b> A ratio that tends to a nonzero constant is \(O\) but not \(o\). Only a ratio that tends to zero is \(o\).</div>
+        </section>
+      </div>
+      <div class="col c-lab">
+        <section class="card" id="ratioCard">
+          <div class="card-h"><h2>Lab · ratio test</h2><div class="row"><label class="lbl" for="fsel">f(h)</label><select id="fsel"></select></div></div>
+          <div class="split two">
+            <div class="fill"><canvas id="cv" role="img" aria-label="log of the ratio f over h to the power q as h shrinks"></canvas></div>
+            <div class="col" style="gap:.45rem">
+              <div class="ctl"><label for="sq">q<span>compare with h^q</span><output id="oq"></output></label><input type="range" id="sq" min="0" max="4" step="0.5"></div>
+              <div id="rout"></div>
+            </div>
+          </div>
+        </section>
+        <section class="card" id="dataCard">
+          <div class="card-h"><h2>Lab · order from data</h2><div class="row"><button data-t="nov25">Nov 2025 P4</button><button data-t="feb25">Feb 2025 P9c</button><button data-t="nov24">Nov 2024 P9c</button></div></div>
+          <div class="split two">
+            <table class="t" id="tab"></table>
+            <div id="dout" class="col" style="gap:.45rem"></div>
+          </div>
+        </section>
+      </div>
+      <div class="col c-exam">
+        <section class="card grow"><h2>Past exams</h2><div id="exam"></div></section>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const { M, fmt, math } = Lab;
+  Lab.header(4);
+  const F = [
+    { id: 'hln', tex: 'h\\ln|h|', a: 1, k: 1, f: h => h * Math.log(h) },
+    { id: 'h32', tex: 'h^{3/2}\\ln|h|', a: 1.5, k: 1, f: h => h ** 1.5 * Math.log(h) },
+    { id: 'h2l', tex: 'h^{2}\\ln|h|', a: 2, k: 1, f: h => h * h * Math.log(h) },
+    { id: 'sqrt', tex: '\\sqrt{|h|}', a: .5, k: 0, c: 1, f: h => Math.sqrt(h) },
+    { id: 'sin', tex: '\\sin h', a: 1, k: 0, c: 1, f: h => Math.sin(h) },
+    { id: 'hh2', tex: 'h+h^2', a: 1, k: 0, c: 1, f: h => h + h * h },
+    { id: 'cos', tex: '1-\\cos h', a: 2, k: 0, c: .5, f: h => 2 * Math.sin(h / 2) ** 2 },
+    { id: 'exp', tex: 'e^{h}-1-h', a: 2, k: 0, c: .5, f: h => h < 1e-4 ? h * h / 2 + h ** 3 / 6 : Math.expm1(h) - h },
+    { id: 'h3', tex: 'h^3', a: 3, k: 0, c: 1, f: h => h ** 3 },
+  ];
+  const S = { f: 0, q: 1 };
+  const fsel = document.getElementById('fsel');
+  fsel.innerHTML = F.map((x, i) => `<option value="${i}">${x.tex.replace(/\\ln/g, 'ln ').replace(/\\sqrt\{\|h\|\}/, '√|h|').replace(/\\sin/, 'sin').replace(/\\cos/, 'cos').replace(/[{}\\]/g, '').replace('^3/2', '^(3/2)')}</option>`).join('');
+  fsel.addEventListener('change', () => { S.f = +fsel.value; renderRatio(); });
+  const sq = document.getElementById('sq');
+  sq.addEventListener('input', () => { S.q = +sq.value; renderRatio(); });
+  const cv = document.getElementById('cv');
+  function draw() {
+    const { g, W, H } = Lab.canvas(cv);
+    const fn = F[S.f], L = 34, R = W - 20, T = 8, B = H - 30, ymin = -6, ymax = 6;
+    const X = lh => L + (-lh) / 10 * (R - L), Y = v => B - (Math.max(ymin, Math.min(ymax, v)) - ymin) / (ymax - ymin) * (B - T);
+    g.strokeStyle = Lab.tok('--line'); g.lineWidth = 1;
+    for (let v = ymin; v <= ymax; v += 2) { g.globalAlpha = v === 0 ? 1 : .4; g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(R, Y(v)); g.stroke(); }
+    g.globalAlpha = 1; g.fillStyle = Lab.tok('--muted'); g.font = '10px ' + Lab.tok('--mono'); g.textAlign = 'right';
+    for (let v = ymin; v <= ymax; v += 2) g.fillText(v === 0 ? '1' : '10' + Lab.sup(v), L - 4, Y(v) + 3);
+    g.textAlign = 'center'; for (let lh = 0; lh >= -10; lh -= 2) g.fillText(lh === 0 ? '1' : '10' + Lab.sup(lh), X(lh), B + 13);
+    g.fillText('h → 0', (L + R) / 2, B + 26);
+    g.strokeStyle = Lab.tok('--ink'); g.lineWidth = 2; g.beginPath();
+    for (let i = 0; i <= 200; i++) { const lh = -10 * i / 200, h = 10 ** lh, r = Math.abs(fn.f(h)) / h ** S.q; const y = Y(Math.log10(r)); i ? g.lineTo(X(lh), y) : g.moveTo(X(lh), y); }
+    g.stroke();
+    g.textAlign = 'left'; g.fillStyle = Lab.tok('--muted'); g.fillText('|f(h) / h^q|', L + 4, T + 10);
+  }
+  function renderRatio() {
+    const fn = F[S.f]; fsel.value = S.f; sq.value = S.q; document.getElementById('oq').textContent = fmt(S.q, 1);
+    let lim, cls, verdict, why;
+    if (fn.a > S.q) { lim = '0'; cls = 'ok'; verdict = `o(h^{${S.q}})\\ \\text{and}\\ O(h^{${S.q}})`; why = `The power \\(${fmt(fn.a, 1)}\\) beats \\(${fmt(S.q, 1)}\\)${fn.k ? ', and the log cannot stop it' : ''}.`; }
+    else if (fn.a < S.q || fn.k) { lim = '\\infty'; cls = 'bad'; verdict = `\\text{neither } O(h^{${S.q}}) \\text{ nor } o(h^{${S.q}})`; why = fn.a < S.q ? `The power \\(${fmt(fn.a, 1)}\\) is too small, so the ratio blows up.` : `Equal powers, but \\(|\\ln|h||\\to\\infty\\) is left over.`; }
+    else { lim = fmt(fn.c, 2); cls = 'meh'; verdict = `O(h^{${S.q}})\\ \\text{but not}\\ o(h^{${S.q}})`; why = 'Equal powers: the ratio settles on a nonzero constant, so it is bounded but does not vanish.'; }
+    const el = document.getElementById('rout');
+    el.innerHTML = `<div class="eq">\\[\\lim_{h\\to0}\\left|\\frac{${fn.tex}}{h^{${S.q}}}\\right|=${lim}\\]</div>
+      <p class="verdict ${cls}" style="font-size:1.15rem">\\(${fn.tex}\\) is \\(${verdict}\\)</p><p class="note">${why}</p>`;
+    math(el); draw();
+  }
+  Lab.watch(cv.parentElement, draw);
+  renderRatio();
+
+  const TABS = {
+    nov25: { h: [.5, .25, .125, .0625, .03125], e: [0.62500063, 0.10937504, 0.02148438, 0.00463867, 0.00106812], q: 6, lbl: 'rms' },
+    feb25: { h: [.25, .125, .0625, .03125, .015625], e: [20.5671875, 4.94648437, 1.21220703, 0.3, 0.075], q: 3, lbl: 'error' },
+    nov24: { h: [.25, .125, .0625, .03125, .015625], e: [48, 16, 6, 2.5, 1.125], q: 4, lbl: 'error' },
+  };
+  let D = JSON.parse(JSON.stringify(TABS.nov25));
+  const tab = document.getElementById('tab');
+  function renderData() {
+    const rows = D.h.map((h, i) => {
+      const r = i ? D.e[i - 1] / D.e[i] : null, p = r ? Math.log2(r) : null;
+      return `<tr><td class="m">${fmt(h, 5)}</td><td><input type="number" step="any" data-i="${i}" value="${D.e[i]}"></td><td class="m">${r ? fmt(r, 2) : ''}</td><td class="m gold">${p != null ? fmt(p, 2) : ''}</td></tr>`;
+    }).join('');
+    tab.innerHTML = `<tr><th>h</th><th>${D.lbl}</th><th>ratio</th><th>p = log₂</th></tr>${rows}`;
+    tab.querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => { D.e[+inp.dataset.i] = +inp.value; renderData(); }));
+    const n = D.e.length, pLast = Math.log2(D.e[n - 2] / D.e[n - 1]), p = Math.round(pLast);
+    const out = document.getElementById('dout');
+    out.innerHTML = `<p class="verdict gold" style="font-size:1.2rem">Observed order \\(p\\approx${p}\\)</p>
+      <p class="note">The last ratio is ${fmt(D.e[n - 2] / D.e[n - 1], 2)}, close to \\(2^{${p}}=${2 ** p}\\). Earlier ratios are still polluted by higher-order terms.</p>
+      <div class="ctl"><label for="qin">q<span>points in the stencil</span><output>${D.q}</output></label><input type="range" id="qin" min="2" max="9" step="1" value="${D.q}"></div>
+      <div class="eq">\\[k=q-p=${D.q}-${p}=${D.q - p}\\]</div>
+      <p class="note">Only meaningful when the stencil is optimal, as in Nov 2025 P4.</p>`;
+    out.querySelector('#qin').addEventListener('input', e => { D.q = +e.target.value; renderData(); });
+    math(out);
+  }
+  document.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', () => { D = JSON.parse(JSON.stringify(TABS[b.dataset.t])); renderData(); }));
+  renderData();
+  const loadF = (i, q) => { S.f = i; S.q = q; renderRatio(); };
+
+  const both = ['Statement 1 true, statement 2 true', 'Statement 1 true, statement 2 false', 'Statement 1 false, statement 2 true', 'Statement 1 false, statement 2 false'];
+  Lab.exam(document.getElementById('exam'), [
+    {
+      label: 'Nov 2025 · P2',
+      q: M`1) \(h\ln|h|=o(h)\) as \(h\to0\).<br>2) For \(p\ge0\): if \(f(h)=O(h^{p+2})\) and \(g(h)=h^p\), then \(f/g=O(h^2)\).`,
+      opts: both, answer: 2,
+      sol: [
+        M`1) \(o(h)\) needs \(\frac{|h\ln|h||}{|h|}=|\ln|h||\to0\). It tends to \(\infty\): false.`,
+        M`2) \(\frac{|f/g|}{h^2}=\frac{|f|}{h^{p+2}}\le C_0\): bounded, so true.`,
+        M`Answer <b>c</b>.`,
+      ],
+      load: () => loadF(0, 1),
+    },
+    {
+      label: 'Feb 2025 · P4',
+      q: M`1) \(h^{3/2}\ln|h|=O(h)\) as \(h\to0\).<br>2) If \(f=O(h^p)\) and \(g=O(h^q)\), then \(f\cdot g=O(h^{p+q})\).`,
+      opts: both, answer: 0,
+      sol: [
+        M`1) \(\frac{|h^{3/2}\ln|h||}{|h|}=|h^{1/2}\ln|h||\to0\): bounded, so true (it is even \(o(h)\)).`,
+        M`2) \(\frac{|fg|}{h^{p+q}}=\frac{|f|}{h^p}\cdot\frac{|g|}{h^q}\le C_0C_1\): true.`,
+        M`Answer <b>a</b>.`,
+      ],
+      load: () => loadF(1, 1),
+    },
+    {
+      label: 'Nov 2024 · P4',
+      q: M`1) \(h\ln|h|=O(h)\) as \(h\to0\).<br>2) If \(f=O(h^p)\) and \(g=O(h^{p+1})\), then \(f+g=O(h^p)\).`,
+      opts: both, answer: 2,
+      sol: [
+        M`1) \(\frac{|h\ln|h||}{|h|}=|\ln|h||\to\infty\): not bounded, so false.`,
+        M`2) \(\frac{|f+g|}{h^p}\le\frac{|f|}{h^p}+|h|\frac{|g|}{h^{p+1}}\le C_1+C_2|h|\): bounded, so true.`,
+        M`Answer <b>c</b>.`,
+      ],
+      load: () => loadF(0, 1),
+    },
+    {
+      label: 'Nov 2025 · P4',
+      q: M`A 6-point, optimally accurate scheme for \(y+y''+y^{(k)}=e^t\) gives these rms values of \(I^h(Lu)-L^h(I^hu)\) for \(h=0.5,0.25,\dots,0.03125\): 0.62500063, 0.10937504, 0.02148438, 0.00463867, 0.00106812. What is \(k\)?`,
+      opts: [M`\(k=1\)`, M`\(k=2\)`, M`\(k=3\)`, M`\(k=4\)`], answer: 3,
+      sol: [
+        M`Ratios: 5.71, 5.09, 4.63, 4.34, approaching \(4=2^2\). So the order of accuracy is \(p=2\).`,
+        M`With \(q=6\) points and optimal accuracy, \(k+p=q\), so \(k=6-2=4\).`,
+        M`Answer <b>d</b>. The highest derivative sets the order, so \(k\) is the 4 in \(y^{(4)}\).`,
+      ],
+      load: () => { D = JSON.parse(JSON.stringify(TABS.nov25)); renderData(); },
+    },
+  ]);
+});
+</script>
+</body>
+</html>

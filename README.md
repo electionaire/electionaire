@@ -38,9 +38,21 @@ hero falls back to the plain centred name.
 
 ## Subdomain: mecheng.electionaire.com
 
-`mecheng/` is a separate small site for computational mechanics course apps. Right now it holds the
-Stencil Consistency Lab, a single self-contained `index.html` with no build step.
-`.cpanel.yml` copies it to `~/mecheng.electionaire.com/` on every deploy.
+`mecheng/` is a separate small site: an exam trainer for TU/e 4MC10 Computational Mechanics.
+Plain HTML, CSS and JS with no build step. `.cpanel.yml` copies it to `~/mecheng.electionaire.com/`
+on every deploy.
+
+```
+mecheng/
+  index.html        menu of the ten exam questions
+  assets/lab.css    shared theme (matches electionaire.com) and one-screen dashboard layout
+  assets/lab.js     question registry (titles, covered past problems), header, maths, past-exam widget
+  q1/ … q10/        one page per exam slot: method, interactive lab, past exams with worked solutions
+```
+
+Each question page loads KaTeX from jsDelivr for the maths. To add a past exam, append an item to the
+`Lab.exam(...)` list at the bottom of that question's `index.html`; to change a menu card, edit `QS` in
+`assets/lab.js`.
 
 One-time setup in cPanel:
 1. **Domains** → **Create A New Domain**. Enter `mecheng.electionaire.com`.
@@ -53,8 +65,7 @@ One-time setup in cPanel:
 If the domain's DNS is not managed by this cPanel host, also add a DNS record at your DNS provider:
 `mecheng` as a CNAME to `electionaire.com` (or an A record to the server's IP).
 
-To add another app later, put it in a subfolder, e.g. `mecheng/another-app/index.html`, which serves at
-`mecheng.electionaire.com/another-app/`.
+Each page is served at its folder, e.g. `mecheng.electionaire.com/q9/`.
 
 ## Deploying to cPanel
 

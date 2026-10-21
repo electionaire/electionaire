@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4MC10 exam trainer</title>
+<meta name="theme-color" content="#0E0D0C">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="../assets/lab.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/lab.js"></script>
+<style>
+@media (min-width: 1100px) and (min-height: 640px) { .split.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+#cv { cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top" id="top"></header>
+  <main class="stage">
+    <section class="view tri" data-view="main">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method</h2>
+          <ol class="steps">
+            <li><span><b>Lagrange family:</b> a full tensor grid of nodes. Order \(n\) in \(d\) dimensions gives \((n+1)^d\) nodes: quadratic is 9 in 2D and 27 in 3D.</span></li>
+            <li><span><b>Serendipity family:</b> only boundary nodes, no interior ones. In 2D: 4, 8, 12 nodes for orders 1, 2, 3. The 3D quadratic element has 20.</span></li>
+            <li><span><b>Kronecker property:</b> \(N_i=1\) at its own node and \(0\) at every other node, and all shape functions add up to 1.</span></li>
+            <li><span><b>Which node?</b> Every factor marks a line where \(N_i=0\): \((1-\xi_1)\) gives \(\xi_1=1\), \((1+3\xi_1)\) gives \(\xi_1=-\tfrac13\). Cross out every node on those lines; the one left over is the answer.</span></li>
+            <li><span><b>Confirm:</b> evaluate \(N_i\) at that node. It must equal 1.</span></li>
+          </ol>
+          <div class="key">1D Lagrange factor: \(\ell_a(\xi)=\prod_{m\ne a}\dfrac{\xi-\xi_m}{\xi_a-\xi_m}\). In 2D: \(N=\ell_a(\xi_1)\,\ell_b(\xi_2)\).</div>
+          <div class="trap"><b>Trap.</b> Node numbers follow the exam's figure: corners counter-clockwise first, then the edge nodes. Check the figure each time.</div>
+        </section>
+      </div>
+      <div class="col c-lab">
+        <section class="card grow">
+          <div class="card-h"><h2>Lab · click a node</h2><div class="row"><div id="fam"></div><div id="ord"></div></div></div>
+          <div class="row"><span class="lbl">Try</span><button id="exNov25">Nov 2025 P7 formula</button><button id="exLag">Quadratic Lagrange</button></div>
+          <div class="split two">
+            <div class="fill"><canvas id="cv" role="img" aria-label="Reference element with nodes; the selected shape function is shaded"></canvas></div>
+            <div id="out" class="col" style="gap:.45rem"></div>
+          </div>
+        </section>
+      </div>
+      <div class="col c-exam">
+        <section class="card grow"><h2>Past exams</h2><div id="exam"></div></section>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const { M, frac, fmt, math } = Lab;
+  Lab.header(6);
+  const S = { fam: 'ser', n: 3, sel: 8 };
+  function nodes(fam, n) {
+    const c = k => -1 + 2 * k / n, p = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    for (let k = 1; k < n; k++) p.push([c(k), -1]);
+    for (let k = 1; k < n; k++) p.push([1, c(k)]);
+    for (let k = n - 1; k >= 1; k--) p.push([c(k), 1]);
+    for (let k = n - 1; k >= 1; k--) p.push([-1, c(k)]);
+    if (fam === 'lag') for (let j = 1; j < n; j++) for (let i = 1; i < n; i++) p.push([c(i), c(j)]);
+    return p;
+  }
+  const grid = n => Array.from({ length: n + 1 }, (_, k) => -1 + 2 * k / n);
+  const ell = (x, a, set) => set.reduce((acc, m) => Math.abs(m - a) < 1e-9 ? acc : acc * (x - m) / (a - m), 1);
+  function shape(fam, n, node) {
+    const [xi, yi] = node;
+    if (fam === 'lag' || n === 1) { const g = grid(n); return (x, y) => ell(x, xi, g) * ell(y, yi, g); }
+    if (n === 2) {
+      if (Math.abs(xi) === 1 && Math.abs(yi) === 1) return (x, y) => .25 * (1 + x * xi) * (1 + y * yi) * (x * xi + y * yi - 1);
+      if (xi === 0) return (x, y) => .5 * (1 - x * x) * (1 + y * yi);
+      return (x, y) => .5 * (1 + x * xi) * (1 - y * y);
+    }
+    if (Math.abs(xi) === 1 && Math.abs(yi) === 1) return (x, y) => (1 / 32) * (1 + x * xi) * (1 + y * yi) * (9 * (x * x + y * y) - 10);
+    if (Math.abs(Math.abs(xi) - 1 / 3) < 1e-9) return (x, y) => (9 / 32) * (1 + y * yi) * (1 - x * x) * (1 + 9 * x * xi);
+    return (x, y) => (9 / 32) * (1 + x * xi) * (1 - y * y) * (1 + 9 * y * yi);
+  }
+  // TeX of the shape function plus its zero lines
+  const V = ['\\xi_1', '\\xi_2'];
+  function lf(m, v) { // factor of (v - m), normalised: returns [const, tex, zero]
+    if (Math.abs(m) < 1e-9) return [1, V[v], `${V[v]}=0`];
+    const k = Math.round(Math.abs(1 / m));
+    return [-m, `(1${m > 0 ? '-' : '+'}${k === 1 ? '' : k}${V[v]})`, `${V[v]}=${frac(m).tex}`];
+  }
+  const sgn = (s, k, v) => `(1${s > 0 ? '+' : '-'}${k === 1 ? '' : k}${V[v]})`;
+  function formula(fam, n, node) {
+    const [xi, yi] = node;
+    if (fam === 'lag' || n === 1) {
+      const g = grid(n); let C = 1; const f = [], z = [];
+      [[xi, 0], [yi, 1]].forEach(([a, v]) => g.forEach(m => { if (Math.abs(m - a) < 1e-9) return; const [c, t, zz] = lf(m, v); C *= c / (a - m); f.push(t); z.push(zz); }));
+      f.sort((a, b) => (a[0] === '(') - (b[0] === '('));
+      return { tex: `${frac(C).tex === '1' ? '' : frac(C).tex}${f.join('')}`, zero: z };
+    }
+    const sx = Math.sign(xi), sy = Math.sign(yi);
+    if (n === 2) {
+      if (Math.abs(xi) === 1 && Math.abs(yi) === 1) return { tex: `\\tfrac14${sgn(sx, 1, 0)}${sgn(sy, 1, 1)}(${sx > 0 ? '' : '-'}\\xi_1${sy > 0 ? '+' : '-'}\\xi_2-1)`, zero: [`\\xi_1=${-sx}`, `\\xi_2=${-sy}`, `${sx > 0 ? '' : '-'}\\xi_1${sy > 0 ? '+' : '-'}\\xi_2=1`] };
+      if (xi === 0) return { tex: `\\tfrac12(1-\\xi_1)(1+\\xi_1)${sgn(sy, 1, 1)}`, zero: ['\\xi_1=\\pm1', `\\xi_2=${-sy}`] };
+      return { tex: `\\tfrac12${sgn(sx, 1, 0)}(1-\\xi_2)(1+\\xi_2)`, zero: [`\\xi_1=${-sx}`, '\\xi_2=\\pm1'] };
+    }
+    if (Math.abs(xi) === 1 && Math.abs(yi) === 1) return { tex: `\\tfrac{1}{32}${sgn(sx, 1, 0)}${sgn(sy, 1, 1)}(9\\xi_1^2+9\\xi_2^2-10)`, zero: [`\\xi_1=${-sx}`, `\\xi_2=${-sy}`, '\\xi_1^2+\\xi_2^2=\\tfrac{10}{9}'] };
+    if (Math.abs(Math.abs(xi) - 1 / 3) < 1e-9) return { tex: `\\tfrac{9}{32}(1-\\xi_1)(1+\\xi_1)${sgn(sx, 3, 0)}${sgn(sy, 1, 1)}`, zero: ['\\xi_1=\\pm1', `\\xi_1=${sx > 0 ? '-' : ''}\\tfrac13`, `\\xi_2=${-sy}`] };
+    return { tex: `\\tfrac{9}{32}${sgn(sx, 1, 0)}(1-\\xi_2)(1+\\xi_2)${sgn(sy, 3, 1)}`, zero: [`\\xi_1=${-sx}`, '\\xi_2=\\pm1', `\\xi_2=${sy > 0 ? '-' : ''}\\tfrac13`] };
+  }
+  const setFam = Lab.seg(document.getElementById('fam'), [{ v: 'lag', label: 'Lagrange' }, { v: 'ser', label: 'Serendipity' }], S.fam, v => { S.fam = v; S.sel = 0; render(); });
+  const setOrd = Lab.seg(document.getElementById('ord'), [{ v: '1', label: 'Linear' }, { v: '2', label: 'Quadratic' }, { v: '3', label: 'Cubic' }], String(S.n), v => { S.n = +v; S.sel = 0; render(); });
+  document.getElementById('exNov25').addEventListener('click', () => { Object.assign(S, { fam: 'ser', n: 3, sel: 8 }); render(); });
+  document.getElementById('exLag').addEventListener('click', () => { Object.assign(S, { fam: 'lag', n: 2, sel: 8 }); render(); });
+
+  const cv = document.getElementById('cv'), off = document.createElement('canvas');
+  let geo = null;
+  function draw() {
+    const { g, W, H } = Lab.canvas(cv);
+    const pts = nodes(S.fam, S.n), Nf = shape(S.fam, S.n, pts[S.sel]);
+    const side = Math.min(W, H) - 44, x0 = (W - side) / 2, y0 = (H - side) / 2 + 4;
+    const X = x => x0 + (x + 1) / 2 * side, Y = y => y0 + (1 - y) / 2 * side;
+    geo = { X, Y, pts };
+    const R = 140; off.width = R; off.height = R;
+    const og = off.getContext('2d'), img = og.createImageData(R, R);
+    for (let j = 0; j < R; j++) for (let i = 0; i < R; i++) {
+      const v = Nf(-1 + 2 * (i + .5) / R, 1 - 2 * (j + .5) / R), k = (j * R + i) * 4;
+      if (v >= 0) { img.data[k] = 201; img.data[k + 1] = 180; img.data[k + 2] = 138; img.data[k + 3] = Math.min(255, v * 230); }
+      else { img.data[k] = 224; img.data[k + 1] = 128; img.data[k + 2] = 111; img.data[k + 3] = Math.min(255, -v * 600); }
+    }
+    og.putImageData(img, 0, 0);
+    g.imageSmoothingEnabled = true; g.drawImage(off, x0, y0, side, side);
+    g.strokeStyle = 'rgba(243,238,230,.55)'; g.lineWidth = 1; g.setLineDash([3, 3]); g.beginPath();
+    for (const s of Lab.contour(Nf, -1, 1, -1, 1, 90, 90)) { g.moveTo(X(s[0]), Y(s[1])); g.lineTo(X(s[2]), Y(s[3])); }
+    g.stroke(); g.setLineDash([]);
+    g.strokeStyle = Lab.tok('--soft'); g.lineWidth = 1.5; g.strokeRect(x0, y0, side, side);
+    g.font = '10px ' + Lab.tok('--mono');
+    pts.forEach(([x, y], i) => {
+      const on = i === S.sel;
+      g.beginPath(); g.arc(X(x), Y(y), on ? 6.5 : 4.5, 0, 7);
+      g.fillStyle = on ? Lab.tok('--ink') : Lab.tok('--paper'); g.fill();
+      g.strokeStyle = on ? Lab.tok('--strong') : Lab.tok('--soft'); g.lineWidth = 1.5; g.stroke();
+      const dx = x <= -1 ? -14 : x >= 1 ? 14 : 0, dy = y >= 1 ? -12 : y <= -1 ? 14 : -11;
+      g.fillStyle = on ? Lab.tok('--ink') : Lab.tok('--muted'); g.textAlign = 'center';
+      g.fillText(i + 1, X(x) + dx + (dx === 0 && Math.abs(y) < 1 ? 10 : 0), Y(y) + dy + 3);
+    });
+    g.textAlign = 'left'; g.fillStyle = Lab.tok('--muted');
+    g.fillText('ξ₁ →', x0 + side - 30, y0 + side + 26); g.fillText('ξ₂ ↑', x0 - 36, y0 + side / 2 - 18);
+  }
+  Lab.drag(cv, {
+    hit: (x, y) => { if (!geo) return null; let best = null, bd = 14; geo.pts.forEach(([a, b], i) => { const d = Math.hypot(geo.X(a) - x, geo.Y(b) - y); if (d < bd) { bd = d; best = i; } }); return best; },
+    move: id => { if (id !== S.sel) { S.sel = id; render(); } },
+  });
+  function counts() {
+    const n = S.n;
+    return [[1, n + 1, n + 1], [2, (n + 1) ** 2, 4 * n], [3, (n + 1) ** 3, n === 1 ? 8 : 8 + 12 * (n - 1)]];
+  }
+  function render() {
+    setFam(S.fam); setOrd(String(S.n));
+    const pts = nodes(S.fam, S.n), node = pts[S.sel], Nf = shape(S.fam, S.n, node), F = formula(S.fam, S.n, node);
+    const others = pts.filter((_, i) => i !== S.sel).every(([x, y]) => Math.abs(Nf(x, y)) < 1e-9);
+    let sum = 0; pts.forEach(p => { sum += shape(S.fam, S.n, p)(.37, -.21); });
+    const out = document.getElementById('out');
+    out.innerHTML = `
+      <p class="verdict gold" style="font-size:1.25rem">Node ${S.sel + 1} at \\((${frac(node[0]).tex},\\ ${frac(node[1]).tex})\\)</p>
+      <div class="eq eqbox">\\[N_{${S.sel + 1}}(\\vec\\xi)=${F.tex}\\]</div>
+      <p class="note">Dashed lines: where \\(N_{${S.sel + 1}}=0\\). Factors vanish on \\(${F.zero.join(',\\ ')}\\).</p>
+      <dl class="facts">
+        <dt>Own node</dt><dd class="mono">N = ${fmt(Nf(node[0], node[1]), 3)}</dd>
+        <dt>Other ${pts.length - 1} nodes</dt><dd class="${others ? 'ok' : 'bad'}">${others ? 'all zero ✓' : 'not all zero'}</dd>
+        <dt>Σ Nⱼ at a random point</dt><dd class="mono">${fmt(sum, 6)}</dd>
+      </dl>
+      <table class="t"><tr><th>${['', 'Linear', 'Quadratic', 'Cubic'][S.n]} element</th><th>Lagrange</th><th>Serendipity</th></tr>
+        ${counts().map(([d, l, s]) => `<tr${d === 2 ? ' class="hl"' : ''}><td>${d}D</td><td class="m">${l}</td><td class="m">${s}</td></tr>`).join('')}</table>`;
+    math(out); draw();
+  }
+  Lab.watch(cv.parentElement, draw);
+  render();
+
+  Lab.exam(document.getElementById('exam'), [
+    {
+      label: 'Nov 2025 · P7',
+      q: M`Cubic serendipity element (12 nodes: corners 1–4 counter-clockwise from bottom-left, then 5–6 bottom, 7–8 right, 9–10 top, 11–12 left). Which node owns \[N_i^e(\vec\xi)=\tfrac{9}{32}(1-\xi_1)(1+\xi_1)(1+3\xi_1)(1+\xi_2)\ ?\]`,
+      opts: [M`\(i=3\)`, M`\(i=6\)`, M`\(i=9\)`, M`\(i=12\)`], answer: 2,
+      sol: [
+        M`The factors vanish on \(\xi_1=1\), \(\xi_1=-1\), \(\xi_1=-\tfrac13\) and \(\xi_2=-1\).`,
+        M`That crosses out the left and right edges, the bottom edge and the node at \(\xi_1=-\tfrac13\) on top (node 10).`,
+        M`Only \((\tfrac13,1)\), node 9, survives. Check: \(\tfrac{9}{32}\cdot\tfrac23\cdot\tfrac43\cdot2\cdot2=1\). Answer <b>c</b>.`,
+      ],
+      load: () => { Object.assign(S, { fam: 'ser', n: 3, sel: 8 }); render(); },
+    },
+    {
+      label: 'Feb 2025 · P6',
+      q: 'A three-dimensional quadratic element of the Lagrange family has',
+      opts: ['3 nodes', '9 nodes', '20 nodes', '27 nodes'], answer: 3,
+      sol: [M`Quadratic means 3 nodes per direction; Lagrange means the full grid.`, M`\(3^3=27\) nodes: answer <b>d</b>. (20 is the quadratic serendipity brick; 9 is the 2D Lagrange square.)`],
+      load: () => { Object.assign(S, { fam: 'lag', n: 2, sel: 8 }); render(); },
+    },
+    {
+      label: 'Nov 2024 · P5',
+      q: 'The three-dimensional quadratic isoparametric element of the Lagrange family has how many nodes?',
+      opts: ['8', '9', '20', '27'], answer: 3,
+      sol: [M`A regular pattern of three nodes in each of three directions: \(3^3=27\). Answer <b>d</b>.`],
+      load: () => { Object.assign(S, { fam: 'lag', n: 2, sel: 8 }); render(); },
+    },
+    {
+      label: 'Nov 2024 · P6',
+      q: M`Bilinear element with \(\underset{\sim}{\vec x}^e=(8\vec e_1+8\vec e_2,\ 4\vec e_1+8\vec e_2,\ 2\vec e_1+4\vec e_2,\ 6\vec e_1+4\vec e_2)^T\). The Jacobian at the centre, \(\boldsymbol J(\vec 0)\), reads`,
+      opts: [M`\(2\vec e_1\vec e_1+\vec e_2\vec e_1+2\vec e_2\vec e_2\)`, M`\(2\vec e_1\vec e_1-\vec e_2\vec e_1+2\vec e_2\vec e_2\)`, M`\(-2\vec e_1\vec e_1+\vec e_2\vec e_1-2\vec e_2\vec e_2\)`, M`\(-2\vec e_1\vec e_1-\vec e_2\vec e_1-2\vec e_2\vec e_2\)`],
+      answer: 3,
+      sol: [
+        M`Isoparametric map: \(\vec x(\vec\xi)=\underset{\sim}{N}^{eT}\underset{\sim}{\vec x}^e=(5-2\xi_1-\xi_2)\vec e_1+(6-2\xi_2)\vec e_2\).`,
+        M`\(\boldsymbol J=\vec\nabla_\xi\vec x=\vec e_1\frac{\partial\vec x}{\partial\xi_1}+\vec e_2\frac{\partial\vec x}{\partial\xi_2}=\vec e_1(-2\vec e_1)+\vec e_2(-\vec e_1-2\vec e_2)\).`,
+        M`So \(\boldsymbol J=-2\vec e_1\vec e_1-\vec e_2\vec e_1-2\vec e_2\vec e_2\): answer <b>d</b>. The Q10 element lab computes this live.`,
+      ],
+      load: () => { location.href = '../q10/#iso:nov24'; },
+    },
+  ]);
+});
+</script>
+</body>
+</html>

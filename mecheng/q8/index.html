@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4MC10 exam trainer</title>
+<meta name="theme-color" content="#0E0D0C">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="../assets/lab.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/lab.js"></script>
+<style>
+.idl { display: flex; flex-wrap: wrap; gap: .3rem; }
+.idl button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.cmp td:first-child { color: var(--muted); font-size: .76rem; white-space: nowrap; }
+.cmp td { font-size: .8rem; }
+@media (min-width: 1100px) and (min-height: 640px) { #idCard { flex: 1.25 1 0; } #cmpCard { flex: 1 1 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top" id="top"></header>
+  <main class="stage">
+    <section class="view tri" data-view="main">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method</h2>
+          <ol class="steps">
+            <li><span><b>Look at the unknown.</b> A scalar field \(u(\vec x)\) or \(T(\vec x)\) means a scalar problem with one degree of freedom per node. A vector field \(\vec u(\vec x)\) means a vector problem with one degree of freedom per node per direction.</span></li>
+            <li><span><b>The weight function matches the unknown:</b> \(\phi\) for scalar problems, \(\vec\phi\) for vector problems.</span></li>
+            <li><span><b>Write each term in index notation.</b> Every term must have the same free indices, and each index must pair with the same partner on both sides. Equal tensor order is not enough.</span></li>
+            <li><span><b>The product rule has no normal vector.</b> \(\vec n\) only appears after the divergence theorem: \(\int_V\vec\nabla\cdot(\ldots)\,dV=\int_S\vec n\cdot(\ldots)\,dS\).</span></li>
+            <li><span><b>Reading code:</b> <code>u = zeros(n,1)</code> holds plain numbers: a scalar degree-of-freedom column, so a scalar problem.</span></li>
+          </ol>
+          <div class="key">Vector rule (\(\boldsymbol\sigma\) symmetric): \(\vec\nabla\cdot(\boldsymbol\sigma\cdot\vec\phi)=\vec\phi\cdot(\vec\nabla\cdot\boldsymbol\sigma)+\vec\nabla\vec\phi^{T}:\boldsymbol\sigma\). Scalar rule: \(\vec\nabla\cdot(\phi\,\vec q)=\phi\,\vec\nabla\cdot\vec q+\vec\nabla\phi\cdot\vec q\).</div>
+          <p class="note">Index notation used here: \(\vec\nabla\cdot\vec a=\partial_i a_i\), \((\boldsymbol A\cdot\vec b)_i=A_{ij}b_j\), \(\boldsymbol A:\boldsymbol B=A_{ij}B_{ji}\), \((\vec\nabla\vec\phi)_{ij}=\partial_i\phi_j\).</p>
+        </section>
+      </div>
+      <div class="col c-lab">
+        <section class="card" id="idCard">
+          <h2>Lab · check an identity in index notation</h2>
+          <div class="idl" id="idl"></div>
+          <div class="eq eqbox" id="idEq"></div>
+          <table class="t" id="idTab"></table>
+          <p class="verdict" id="idV" style="font-size:1.2rem"></p>
+          <p class="note" id="idWhy"></p>
+        </section>
+        <section class="card" id="cmpCard">
+          <h2>Scalar against vector, side by side</h2>
+          <table class="t cmp">
+            <tr><th></th><th>Scalar · heat (Feb 2025)</th><th>Vector · rotor (Nov 2025)</th></tr>
+            <tr><td>Unknown</td><td>\(T(\vec x)\)</td><td>\(\vec u(\vec x)\)</td></tr>
+            <tr><td>Weight</td><td>\(\phi(\vec x)\)</td><td>\(\vec\phi(\vec x)\)</td></tr>
+            <tr><td>Strong form</td><td>\(\vec\nabla\cdot(\lambda\vec\nabla T)=0\)</td><td>\(\vec\nabla\cdot(x_2\,{}^4\boldsymbol C:\vec\nabla\vec u)+\rho\omega^2x_2^2\vec e_2=\vec0\)</td></tr>
+            <tr><td>Flux</td><td>\(\lambda\vec\nabla T\) (vector)</td><td>\(x_2\,{}^4\boldsymbol C:\vec\nabla\vec u\) (2nd-order tensor)</td></tr>
+            <tr><td>Natural BC</td><td>\(\vec n\cdot\lambda\vec\nabla T=\text{given}\)</td><td>\(\vec n\cdot x_2\,{}^4\boldsymbol C:\vec\nabla\vec u=\text{given}\)</td></tr>
+            <tr><td>Dofs per node</td><td>1</td><td>2 in 2D, 3 in 3D</td></tr>
+          </table>
+        </section>
+      </div>
+      <div class="col c-exam">
+        <section class="card grow"><h2>Past exams</h2><div id="exam"></div></section>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const { M, math } = Lab;
+  Lab.header(8);
+  const I = '{\\textcolor{#C9B48A}{i}}', J = '{\\textcolor{#8FB0D6}{j}}', K = 'k';
+  const sig = `\\sigma_{${I}${J}}`;
+  const IDS = [
+    { b: 'Vector rule ✓', src: 'used in Nov 2025 P10b', eq: M`\vec\nabla\cdot(\boldsymbol\sigma\cdot\vec\phi)=\vec\phi\cdot(\vec\nabla\cdot\boldsymbol\sigma)+\vec\nabla\vec\phi^{T}:\boldsymbol\sigma`,
+      rows: [['Left', `\\partial_${I}(${sig}\\,\\phi_${J})`], ['Term 1', `\\phi_${J}\\,\\partial_${I}${sig}`], ['Term 2', `(\\partial_${I}\\phi_${J})\\,${sig}`]], ok: true,
+      why: 'Apply the product rule to ∂ᵢ(σᵢⱼφⱼ): one term differentiates σ, the other differentiates φ. Both pair i and j the same way as the left side.' },
+    { b: 'Nov 2024 P8 · stmt 2', src: 'C is a second-order tensor', eq: M`\vec\nabla\cdot(\vec\phi\cdot\boldsymbol C\cdot\vec\nabla\vec u)\overset{?}{=}\vec\phi\cdot\vec\nabla\cdot(\boldsymbol C\cdot\vec\nabla\vec u)+\vec\nabla\vec\phi^T:(\boldsymbol C\cdot\vec\nabla\vec u)`,
+      rows: [['Left', `\\partial_${J}(\\phi_${I}C_{${I}${K}}\\partial_${K}u_${J})=(\\partial_${J}\\phi_${I})C_{${I}${K}}\\partial_${K}u_${J}+\\ldots`], ['Term 2', `(\\partial_${I}\\phi_${J})\\,C_{${I}${K}}\\partial_${K}u_${J}`]], ok: false,
+      why: 'On the left, φ pairs with the first index of C and the divergence hits u’s index. On the right it is the other way round. Same order, different contractions: statement 2 is false.' },
+    { b: 'Nov 2024 · corrected', src: 'the answer key’s version', eq: M`\vec\nabla\cdot(\boldsymbol C\cdot\vec\nabla\vec u\cdot\vec\phi)=\vec\phi\cdot\vec\nabla\cdot(\boldsymbol C\cdot\vec\nabla\vec u)+\vec\nabla\vec\phi^T:(\boldsymbol C\cdot\vec\nabla\vec u)`,
+      rows: [['Left', `\\partial_${I}(C_{${I}${K}}\\partial_${K}u_${J}\\,\\phi_${J})`], ['Term 1', `\\phi_${J}\\,\\partial_${I}(C_{${I}${K}}\\partial_${K}u_${J})`], ['Term 2', `(\\partial_${I}\\phi_${J})\\,C_{${I}${K}}\\partial_${K}u_${J}`]], ok: true,
+      why: 'Now φ contracts with u’s index j and the divergence with C’s first index i, consistently in every term.' },
+    { b: 'Feb 2025 P8 · a', src: 'answer a', eq: M`\vec n\cdot\big[\boldsymbol\sigma\cdot\vec\phi\big]=\vec\phi\cdot(\vec n\cdot\boldsymbol\sigma),\quad\boldsymbol\sigma={}^4\boldsymbol C:\vec\nabla\vec u`,
+      rows: [['Left', `n_${I}\\,${sig}\\,\\phi_${J}`], ['Right', `\\phi_${J}\\,n_${I}\\,${sig}`]], ok: true,
+      why: 'Both sides are the same product of numbers in a different order. The normal n appears on both sides.' },
+    { b: 'Feb 2025 P8 · b', src: 'option b', eq: M`\vec n\cdot\big[\boldsymbol\sigma\cdot\vec\phi\big]\overset{?}{=}\vec\phi\cdot\vec\nabla\cdot\boldsymbol\sigma`,
+      rows: [['Left', `n_${I}\\,${sig}\\,\\phi_${J}`], ['Right', `\\phi_${J}\\,\\partial_${I}${sig}`]], ok: false, why: 'The right side has a derivative where the left has the normal n. No n on the right means it cannot be equal.' },
+    { b: 'Feb 2025 P8 · c', src: 'option c', eq: M`\vec n\cdot\big[\boldsymbol\sigma\cdot\vec\phi\big]\overset{?}{=}\vec\nabla\cdot\big[\boldsymbol\sigma\cdot\vec\phi\big]`,
+      rows: [['Left', `n_${I}\\,${sig}\\,\\phi_${J}`], ['Right', `\\partial_${I}(${sig}\\,\\phi_${J})`]], ok: false, why: 'Swapping ∇ for n is only allowed under integrals: ∫_V ∇·(…) dV = ∫_S n·(…) dS. Pointwise these differ.' },
+    { b: 'Feb 2025 P8 · d', src: 'option d', eq: M`\vec n\cdot\big[\boldsymbol\sigma\cdot\vec\phi\big]\overset{?}{=}\vec\nabla\vec\phi^T:\boldsymbol\sigma`,
+      rows: [['Left', `n_${I}\\,${sig}\\,\\phi_${J}`], ['Right', `(\\partial_${I}\\phi_${J})\\,${sig}`]], ok: false, why: 'This is one half of the product rule, with no normal vector. It cannot equal a boundary expression.' },
+    { b: 'Scalar rule ✓', src: 'heat, Feb 2025 P10c', eq: M`\vec\nabla\cdot(\phi\,\lambda\vec\nabla T)=\phi\,\lambda\,\vec\nabla\cdot\vec\nabla T+\vec\nabla\phi\cdot\lambda\vec\nabla T`,
+      rows: [['Left', `\\partial_${I}(\\phi\\,\\lambda\\,\\partial_${I}T)`], ['Term 1', `\\phi\\,\\lambda\\,\\partial_${I}\\partial_${I}T`], ['Term 2', `(\\partial_${I}\\phi)\\,\\lambda\\,\\partial_${I}T`]], ok: true, why: 'With a scalar weight there is a single index: the derivative lands on φ or on ∇T.' },
+  ];
+  let cur = 0;
+  function render() {
+    const d = IDS[cur];
+    document.getElementById('idl').innerHTML = IDS.map((x, i) => `<button type="button" data-i="${i}" aria-pressed="${i === cur}">${x.b}</button>`).join('');
+    document.querySelectorAll('#idl button').forEach(b => b.addEventListener('click', () => { cur = +b.dataset.i; render(); }));
+    const eq = document.getElementById('idEq'); eq.innerHTML = `\\[${d.eq}\\]`; math(eq);
+    const t = document.getElementById('idTab');
+    t.innerHTML = `<tr><th>Term</th><th>Index notation (${d.src})</th></tr>` + d.rows.map(r => `<tr><td>${r[0]}</td><td>\\(${r[1]}\\)</td></tr>`).join('');
+    math(t);
+    const v = document.getElementById('idV'); v.textContent = d.ok ? 'Holds' : 'Does not hold'; v.className = 'verdict ' + (d.ok ? 'ok' : 'bad');
+    document.getElementById('idWhy').textContent = d.why;
+  }
+  render();
+  const go = i => { cur = i; render(); };
+
+  Lab.exam(document.getElementById('exam'), [
+    {
+      label: 'Nov 2025 · P8',
+      q: 'From a Matlab/TensorLab finite element program:<pre class="code">104 uf = Kff \\ (ff + qf - Kfg*ug);\n105 u = zeros(n, 1);\n106 u(iig) = ug;\n107 u(iif) = uf;</pre>Is the problem solved here a scalar or a vector problem?',
+      opts: ['A scalar problem', 'A vector problem', 'Neither a scalar nor a vector problem', 'This cannot be determined from these instructions'], answer: 0,
+      sol: [
+        M`Line 105 creates the degree-of-freedom column \(\underset{\sim}{u}\) as <code>zeros(n,1)</code>: plain scalar entries.`,
+        M`A scalar degree-of-freedom column belongs to a scalar unknown field, so the problem is scalar. Answer <b>a</b>.`,
+      ],
+    },
+    {
+      label: 'Feb 2025 · P8',
+      q: M`Which relationship is correct?`,
+      opts: [M`\(\vec n\cdot[({}^4\boldsymbol C:\vec\nabla\vec u)\cdot\vec\phi]=\vec\phi\cdot(\vec n\cdot{}^4\boldsymbol C:\vec\nabla\vec u)\)`, M`\(\vec n\cdot[({}^4\boldsymbol C:\vec\nabla\vec u)\cdot\vec\phi]=\vec\phi\cdot\vec\nabla\cdot({}^4\boldsymbol C:\vec\nabla\vec u)\)`, M`\(\vec n\cdot[({}^4\boldsymbol C:\vec\nabla\vec u)\cdot\vec\phi]=\vec\nabla\cdot[({}^4\boldsymbol C:\vec\nabla\vec u)\cdot\vec\phi]\)`, M`\(\vec n\cdot[({}^4\boldsymbol C:\vec\nabla\vec u)\cdot\vec\phi]=\vec\nabla\vec\phi^T:{}^4\boldsymbol C:\vec\nabla\vec u\)`],
+      answer: 0,
+      sol: [
+        M`The left side contains \(\vec n\). Options b, c and d have no \(\vec n\) on the right, so they cannot be equal.`,
+        M`In index notation a is \(n_i\sigma_{ij}\phi_j=\phi_j n_i\sigma_{ij}\): the same numbers reordered. Answer <b>a</b>.`,
+      ],
+      load: () => go(3),
+    },
+    {
+      label: 'Nov 2024 · P8',
+      q: M`\(\vec\nabla\cdot(\boldsymbol C\cdot\vec\nabla\vec u)=\vec 0\) with constant second-order \(\boldsymbol C\).<br>1) This is a vector problem.<br>2) The product rule for the weak form is \(\vec\nabla\cdot(\vec\phi\cdot\boldsymbol C\cdot\vec\nabla\vec u)=\vec\phi\cdot\vec\nabla\cdot(\boldsymbol C\cdot\vec\nabla\vec u)+\vec\nabla\vec\phi^T:(\boldsymbol C\cdot\vec\nabla\vec u)\).`,
+      opts: ['1 true, 2 true', '1 true, 2 false', '1 false, 2 true', '1 false, 2 false'], answer: 1,
+      sol: [
+        M`The unknown \(\vec u(\vec x)\) is vector-valued: statement 1 is true.`,
+        M`The contractions on the left do not match those on the right. The correct rule is \(\vec\nabla\cdot(\boldsymbol C\cdot\vec\nabla\vec u\cdot\vec\phi)=\vec\phi\cdot\vec\nabla\cdot(\boldsymbol C\cdot\vec\nabla\vec u)+\vec\nabla\vec\phi^T:(\boldsymbol C\cdot\vec\nabla\vec u)\). Statement 2 is false: answer <b>b</b>.`,
+      ],
+      load: () => go(1),
+    },
+  ]);
+});
+</script>
+</body>
+</html>

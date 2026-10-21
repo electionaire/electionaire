@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4MC10 exam trainer</title>
+<meta name="theme-color" content="#0E0D0C">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="../assets/lab.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/lab.js"></script>
+<style>
+.fp td:last-child { text-align: right; font-family: var(--mono); font-size: .76rem; }
+.fp td .y { color: var(--live); } .fp td .n { color: var(--muted); }
+.ladder { display: flex; flex-wrap: wrap; gap: .3rem; }
+.ladder button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+#eqbox .katex { font-size: 1.18em; }
+@media (min-width: 1100px) and (min-height: 640px) {
+  #formCard { flex: 1.5 1 0; } #bvpCard { flex: 1 1 0; }
+  .split.two { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top" id="top"></header>
+  <main class="stage">
+    <section class="view tri" data-view="main">
+      <div class="col c-method">
+        <section class="card grow">
+          <h2>Method</h2>
+          <ol class="steps">
+            <li><span><b>Strong form:</b> the differential equation at every point, plus boundary conditions. No integrals, full derivatives on \(u\).</span></li>
+            <li><span><b>Weighted residuals:</b> multiply by a weight function \(\phi\), integrate over the domain, require it for all \(\phi\). Derivatives stay on \(u\); none on \(\phi\); no boundary term.</span></li>
+            <li><span><b>Product rule and integration by parts</b> (divergence theorem in 2D/3D) move one derivative from \(u\) onto \(\phi\) and create a boundary term.</span></li>
+            <li><span><b>Weak form:</b> first derivatives on both \(u\) and \(\phi\), plus a boundary term where natural boundary conditions enter.</span></li>
+            <li><span><b>Discrete system:</b> substitute \(u^h=\underset{\sim}{N}^T\underset{\sim}{u}\) and the same for \(\phi\). Only matrices remain: \(\underline K\,\underset{\sim}{u}=\underset{\sim}{f}\).</span></li>
+            <li><span><b>Checking a solution:</b> substitute the candidate into the ODE and into every boundary condition. One failure rules it out.</span></li>
+          </ol>
+          <div class="key"><b>Essential</b> conditions prescribe \(u\) itself; <b>natural</b> conditions prescribe a derivative or flux and live in the boundary term.</div>
+        </section>
+      </div>
+      <div class="col c-lab">
+        <section class="card" id="formCard">
+          <div class="card-h"><h2>Lab · from strong to discrete</h2><div id="prob"></div></div>
+          <div class="ladder" id="ladder"></div>
+          <div class="split two">
+            <div class="col" style="gap:.4rem"><div class="eq eqbox" id="eqbox"></div><p class="kid" id="enote"></p></div>
+            <div class="col" style="gap:.35rem"><table class="t fp" id="fp"></table><p class="verdict gold" id="fpv" style="font-size:1.2rem"></p></div>
+          </div>
+        </section>
+        <section class="card" id="bvpCard">
+          <div class="card-h"><h2>Lab · check a solution</h2><span class="note">\(u''=0\) on \((0,1)\), \(u(0)=0\), \(u'(1)=1\)</span></div>
+          <div class="split two">
+            <div class="fill"><canvas id="cv" role="img" aria-label="Candidate solutions with the slope required at x equals 1"></canvas></div>
+            <table class="t" id="bvp"></table>
+          </div>
+        </section>
+      </div>
+      <div class="col c-exam">
+        <section class="card grow"><h2>Past exams</h2><div id="exam"></div></section>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const { M, math } = Lab;
+  Lab.header(5);
+  const N = M`\underset{\sim}{N}`, uu = M`\underset{\sim}{u}`, ff = M`\underset{\sim}{f}`, KK = M`\underline{K}`;
+  const disc = { eq: M`u^h=${N}^T${uu},\ \phi^h=${N}^T\underset{\sim}{\phi}\ \Rightarrow\ ${KK}\,${uu}=${ff}`, fp: { mat: 1 } };
+  const P = {
+    a: { label: 'Nov 2025 P5', steps: [
+      { n: 'Strong', eq: M`\frac{d^2u}{dx^2}+v(x)\frac{du}{dx}=0,\quad x\in(0,L)`, fp: { du: 2 }, note: 'Holds at every point: no weight function, no integral.' },
+      { n: 'Weighted residuals', eq: M`\int_0^L\phi\,\frac{d^2u}{dx^2}\,dx+\int_0^L\phi\,v\,\frac{du}{dx}\,dx=0\quad\forall\phi`, fp: { int: 1, all: 1, du: 2 }, note: 'Multiply by φ and integrate. This is the equation printed in Nov 2025 P5: answer b.' },
+      { n: 'Product rule', eq: M`\frac{d}{dx}\Big(\phi\frac{du}{dx}\Big)=\frac{d\phi}{dx}\frac{du}{dx}+\phi\frac{d^2u}{dx^2}`, info: 1, note: 'Not a formulation: the tool that moves one derivative from u onto φ.' },
+      { n: 'Integrate', eq: M`\Big[\phi\frac{du}{dx}\Big]_0^L-\int_0^L\frac{d\phi}{dx}\frac{du}{dx}\,dx+\int_0^L\phi\,v\frac{du}{dx}\,dx=0`, fp: { int: 1, all: 1, du: 1, dphi: 1, bd: 1 }, note: 'The fundamental theorem of calculus turns the derivative of a product into a boundary term.' },
+      { n: 'Weak', eq: M`\int_0^L\Big(\frac{d\phi}{dx}\frac{du}{dx}-\phi\,v\frac{du}{dx}\Big)dx=\Big[\phi\frac{du}{dx}\Big]_0^L\quad\forall\phi`, fp: { int: 1, all: 1, du: 1, dphi: 1, bd: 1 }, note: 'Unknowns on the left, boundary term on the right. Natural conditions enter through the bracket.' },
+      Object.assign({ n: 'Discrete', note: 'Shape functions turn functions into columns of numbers: a linear system.' }, disc)] },
+    b: { label: 'Nov 2024 P10', steps: [
+      { n: 'Strong', eq: M`E\frac{d^2u}{dx^2}-S\,u=0,\ \ x\in(0,L),\quad u(0)=0,\ u(L)=U`, fp: { du: 2 }, note: 'Bar on an elastic foundation. Both boundary conditions prescribe u itself: essential.' },
+      { n: 'Weighted residuals', eq: M`\int_0^L\phi\,E\frac{d^2u}{dx^2}\,dx-\int_0^L\phi\,S\,u\,dx=0\quad\forall\phi`, fp: { int: 1, all: 1, du: 2 }, note: 'Multiply by φ, integrate over (0, L), demand it for every φ.' },
+      { n: 'Product rule', eq: M`\frac{d}{dx}\Big(\phi\,E\frac{du}{dx}\Big)=\frac{d\phi}{dx}E\frac{du}{dx}+\phi\,E\frac{d^2u}{dx^2}`, info: 1, note: 'Rewrite the first integrand as d/dx(…) minus dφ/dx E du/dx.' },
+      { n: 'Integrate', eq: M`\Big[\phi E\frac{du}{dx}\Big]_0^L-\int_0^L\frac{d\phi}{dx}E\frac{du}{dx}\,dx-\int_0^L\phi\,S\,u\,dx=0`, fp: { int: 1, all: 1, du: 1, dphi: 1, bd: 1 }, note: 'Fundamental theorem of calculus on the exact derivative.' },
+      { n: 'Weak', eq: M`\int_0^L\Big(\frac{d\phi}{dx}E\frac{du}{dx}+\phi\,S\,u\Big)dx=\Big[\phi\,E\frac{du}{dx}\Big]_0^L\quad\forall\phi`, fp: { int: 1, all: 1, du: 1, dphi: 1, bd: 1 }, note: 'Both ends are essential, so φ(0) = φ(L) = 0 there and the bracket drops out after discretisation.' },
+      Object.assign({ n: 'Discrete', note: 'K collects ∫(dN/dx E dNᵀ/dx + N S Nᵀ) dx element by element.' }, disc)] },
+    c: { label: 'Feb 2025 P10', steps: [
+      { n: 'Strong', eq: M`\lambda\,\vec\nabla\cdot\vec\nabla T=0\quad\text{in }V`, fp: { du: 2 }, note: 'Stationary heat conduction in the baseplate.' },
+      { n: 'Weighted residuals', eq: M`\int_V\phi\,\lambda\,\vec\nabla\cdot\vec\nabla T\,dV=0\quad\forall\phi`, fp: { int: 1, all: 1, du: 2 }, note: 'Scalar problem, so the weight function φ is a scalar too.' },
+      { n: 'Product rule', eq: M`\vec\nabla\cdot\big(\phi\,\lambda\vec\nabla T\big)=\phi\,\lambda\,\vec\nabla\cdot\vec\nabla T+\vec\nabla\phi\cdot\lambda\vec\nabla T`, info: 1, note: 'The 2D version of d/dx(φ q) = φ dq/dx + dφ/dx q.' },
+      { n: 'Divergence theorem', eq: M`\int_S\phi\,\vec n\cdot\lambda\vec\nabla T\,dS-\int_V\vec\nabla\phi\cdot\lambda\vec\nabla T\,dV=0`, fp: { int: 1, all: 1, du: 1, dphi: 1, bd: 1 }, note: 'Gauss: ∫_V ∇·(…) dV = ∫_S n·(…) dS. The normal n appears only here.' },
+      { n: 'Weak', eq: M`\int_V\vec\nabla\phi\cdot\lambda\vec\nabla T\,dV=\int_S\phi\,\vec n\cdot\lambda\vec\nabla T\,dS\quad\forall\phi`, fp: { int: 1, all: 1, du: 1, dphi: 1, bd: 1 }, note: 'Insulated and symmetry edges have n·λ∇T = 0, so they drop out of the boundary integral.' },
+      Object.assign({ n: 'Discrete', note: 'K = ∫ ∇N λ·∇Nᵀ dV assembled over the 8 × 3 mesh.' }, disc)] },
+  };
+  let pk = 'a', st = 1;
+  const setP = Lab.seg(document.getElementById('prob'), Object.keys(P).map(k => ({ v: k, label: P[k].label })), pk, v => { pk = v; renderForm(); });
+  function classify(fp, info) {
+    if (info) return 'A tool, not a formulation';
+    if (fp.mat) return 'Discrete system';
+    if (!fp.int) return 'Strong form';
+    return fp.dphi ? 'Weak form' : 'Weighted residuals formulation';
+  }
+  function renderForm() {
+    setP(pk);
+    const steps = P[pk].steps, s = steps[st];
+    document.getElementById('ladder').innerHTML = steps.map((x, i) => `<button type="button" data-i="${i}" aria-pressed="${i === st}">${i + 1} · ${x.n}</button>`).join('');
+    document.querySelectorAll('#ladder button').forEach(b => b.addEventListener('click', () => { st = +b.dataset.i; renderForm(); }));
+    const eb = document.getElementById('eqbox'); eb.innerHTML = `\\[${s.eq}\\]`; math(eb);
+    document.getElementById('enote').textContent = s.note;
+    const fp = s.fp || {};
+    const yn = v => v ? '<span class="y">yes</span>' : '<span class="n">no</span>';
+    document.getElementById('fp').innerHTML = s.info ? '<tr><td>This line is used inside the derivation. It is not itself a formulation.</td></tr>' : `
+      <tr><td>Integral over the domain</td><td>${yn(fp.int)}</td></tr>
+      <tr><td>Holds for all φ</td><td>${yn(fp.all)}</td></tr>
+      <tr><td>Highest derivative on u</td><td>${fp.mat ? '–' : fp.du}</td></tr>
+      <tr><td>Derivatives on φ</td><td>${fp.mat ? '–' : fp.dphi || 0}</td></tr>
+      <tr><td>Boundary term</td><td>${yn(fp.bd)}</td></tr>
+      <tr><td>Only matrices and columns</td><td>${yn(fp.mat)}</td></tr>`;
+    document.getElementById('fpv').textContent = classify(fp, s.info);
+  }
+  renderForm();
+
+  const C = [
+    { tex: 'x', f: x => x, d: x => 1, dd: 0 },
+    { tex: 'x^2', f: x => x * x, d: x => 2 * x, dd: 2 },
+    { tex: 'x(1-x)', f: x => x * (1 - x), d: x => 1 - 2 * x, dd: -2 },
+    { tex: 'x(2-x)', f: x => x * (2 - x), d: x => 2 - 2 * x, dd: -2 },
+  ];
+  let sel = 0;
+  const cv = document.getElementById('cv');
+  function draw() {
+    const { g, W, H } = Lab.canvas(cv);
+    const L = 30, R = W - 10, T = 10, B = H - 20, y0 = -.35, y1 = 1.25;
+    const X = x => L + x * (R - L), Y = y => B - (y - y0) / (y1 - y0) * (B - T);
+    g.strokeStyle = Lab.tok('--line'); g.beginPath(); g.moveTo(L, Y(0)); g.lineTo(R, Y(0)); g.moveTo(L, T); g.lineTo(L, B); g.stroke();
+    g.fillStyle = Lab.tok('--muted'); g.font = '10px ' + Lab.tok('--mono'); g.textAlign = 'center';
+    [0, .5, 1].forEach(t => g.fillText(t, X(t), B + 13)); g.textAlign = 'right'; [0, 1].forEach(t => g.fillText(t, L - 4, Y(t) + 3));
+    C.forEach((c, i) => {
+      g.strokeStyle = i === sel ? Lab.tok('--ink') : Lab.tok('--fade'); g.globalAlpha = i === sel ? 1 : .45; g.lineWidth = i === sel ? 2.5 : 1.2;
+      g.beginPath(); for (let k = 0; k <= 60; k++) { const x = k / 60; k ? g.lineTo(X(x), Y(c.f(x))) : g.moveTo(X(x), Y(c.f(x))); } g.stroke();
+    });
+    g.globalAlpha = 1;
+    const c = C[sel], tan = (s, col, dash) => { g.strokeStyle = col; g.setLineDash(dash); g.lineWidth = 1.5; g.beginPath(); g.moveTo(X(.72), Y(c.f(1) - .28 * s)); g.lineTo(X(1), Y(c.f(1))); g.stroke(); g.setLineDash([]); };
+    tan(1, Lab.tok('--live'), [5, 4]); tan(c.d(1), Lab.tok('--ink'), []);
+    g.fillStyle = Lab.tok('--live'); g.beginPath(); g.arc(X(0), Y(0), 4, 0, 7); g.fill();
+    g.textAlign = 'left'; g.font = '600 10px ' + Lab.tok('--mono');
+    g.fillText('- - required slope 1', L + 6, T + 10);
+  }
+  function renderBvp() {
+    const ok = v => v ? '<span class="ok">✓</span>' : '<span class="bad">✗</span>';
+    const el = document.getElementById('bvp');
+    el.innerHTML = `<tr><th>u(x)</th><th>u''</th><th>u(0)</th><th>u'(1)</th><th></th></tr>` + C.map((c, i) => {
+      const all = c.dd === 0 && c.f(0) === 0 && c.d(1) === 1;
+      return `<tr class="${i === sel ? 'hl' : ''}" data-i="${i}" style="cursor:pointer"><td>\\(${c.tex}\\)</td><td class="m">${c.dd} ${ok(c.dd === 0)}</td><td class="m">${c.f(0)} ${ok(c.f(0) === 0)}</td><td class="m">${c.d(1)} ${ok(c.d(1) === 1)}</td><td>${all ? '<span class="chip live">solution</span>' : ''}</td></tr>`;
+    }).join('');
+    el.querySelectorAll('tr[data-i]').forEach(tr => tr.addEventListener('click', () => { sel = +tr.dataset.i; renderBvp(); }));
+    math(el); draw();
+  }
+  Lab.watch(cv.parentElement, draw);
+  renderBvp();
+
+  Lab.exam(document.getElementById('exam'), [
+    {
+      label: 'Nov 2025 · P5',
+      q: M`\[\int_0^L\phi(x)\frac{d^2u}{dx^2}dx+\int_0^L\phi(x)\,v(x)\frac{du}{dx}dx=0\quad\forall\phi(x)\]It represents`,
+      opts: ['the strong formulation of an ODE', 'the weighted residuals formulation of an ODE', 'the weak formulation of an ODE', 'the discrete system of equations of an ODE'],
+      answer: 1,
+      sol: [
+        M`It has integrals and \(\forall\phi\), so it is not the strong form.`,
+        M`The second derivative is still on \(u\) and there is no derivative on \(\phi\): no integration by parts yet, so it is not the weak form.`,
+        M`It is the ODE \(u''+v\,u'=0\) multiplied by \(\phi\) and integrated: the weighted residuals formulation, answer <b>b</b>.`,
+      ],
+      load: () => { pk = 'a'; st = 1; renderForm(); },
+    },
+    {
+      label: 'Feb 2025 · P5',
+      q: M`\(\dfrac{d^2u}{dx^2}=0\) on \((0,1)\), \(u(0)=0\), \(\dfrac{du}{dx}\Big|_{x=1}=1\). The solution is`,
+      opts: [M`\(u(x)=x\)`, M`\(u(x)=x^2\)`, M`\(u(x)=x(1-x)\)`, M`\(u(x)=x(2-x)\)`],
+      answer: 0,
+      sol: [
+        M`\(u''=0\) forces a straight line, which already rules out the three quadratics (\(u''=2,-2,-2\)).`,
+        M`\(u=x\): \(u(0)=0\) and \(u'(1)=1\). Every condition holds: answer <b>a</b>.`,
+      ],
+      load: () => { sel = 0; renderBvp(); },
+    },
+    {
+      type: 'open', label: 'Nov 2024 · P10a',
+      intro: M`Bar on an elastic foundation: \(E\,u''-S\,u=0\) on \((0,L)\) with \(u(0)=0\), \(u(L)=U\).`,
+      parts: [{ id: '10a', pts: 4, q: 'Are these boundary conditions of the essential or the natural type? Motivate your answer.', sol: [
+        M`Both conditions prescribe the unknown \(u(x)\) itself, not one of its derivatives.`,
+        M`So both are <b>essential</b>. A natural condition would prescribe \(E\,du/dx\), the axial force, at an end.`,
+      ], load: () => { pk = 'b'; st = 0; renderForm(); } }],
+    },
+  ]);
+});
+</script>
+</body>
+</html>
